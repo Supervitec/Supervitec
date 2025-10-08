@@ -103,7 +103,7 @@ const startServer = async () => {
   try {
     const User = require('./src/models/User');
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'supervitecingenieriasas@gmail.com';
-    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || '5up3r_v1t3c_4dm1n_2024!';
+    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || '5up3r_v1t3c';
 
     let admin = await User.findOne({ correo_electronico: adminEmail });
 
