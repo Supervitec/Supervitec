@@ -14,7 +14,7 @@ const authRoutes = require('./src/routes/auth');
 const dashboardRoutes = require('./src/routes/dashboard'); 
 const userRoutes = require('./src/routes/users');
 const movementRoutes = require('./src/routes/movements');
-
+const adminRoutes = require('./src/routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,7 +44,8 @@ app.use((req, res, next) => {
 });
 
 // Rutas API
-app.use('/api/v1/auth', authRoutes);  
+app.use('/api/v1/auth', authRoutes); 
+app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/movements', movementRoutes);
