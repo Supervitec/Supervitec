@@ -31,7 +31,7 @@ const limiter = rateLimit({
 
 app.use(limiter); // Aplicar rate limiting
 app.use(cors({ 
-  origin: process.env.NODE_ENV === 'production' ? 'https://mi-dominio.com' : '*',
+  origin: process.env.NODE_ENV === 'production' ? 'https://back-end-fjnh.onrender.com' : '*',
   credentials: true
 }));
 app.use(bodyParser.json({ limit: '10mb' }));
