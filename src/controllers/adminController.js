@@ -195,3 +195,140 @@ exports.exportMovements = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al exportar', error: err.message });
   }
 };
+
+// Obtener estadísticas de un usuario específico
+exports.getUserStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('📊 Obteniendo estadísticas del usuario:', id);
+
+    // Verificar que el usuario existe
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Calcular estadísticas desde los movimientos
+    const movements = await Movement.find({ 
+      user_id: id,
+      activo: true 
+    });
+
+    // Calcular métricas
+    const totalMovements = movements.length;
+    const totalDistance = movements.reduce((sum, mov) => sum + (mov.distancia_recorrida || 0), 0);
+    const averageDistance = totalMovements > 0 ? totalDistance / totalMovements : 0;
+    const maxSpeed = movements.length > 0 
+      ? Math.max(...movements.map(mov => mov.velocidad_maxima || 0)) 
+      : 0;
+    const totalTime = movements.reduce((sum, mov) => sum + (mov.tiempo_total || 0), 0);
+    
+    // Última actividad
+    const lastActivity = movements.length > 0
+      ? movements.sort((a, b) => b.fecha - a.fecha)[0].fecha
+      : null;
+
+    // Calcular posición en ranking (por distancia total)
+    const allUsers = await Movement.aggregate([
+      { $match: { activo: true } },
+      { 
+        $group: { 
+          _id: '$user_id', 
+          totalDistance: { $sum: '$distancia_recorrida' } 
+        } 
+      },
+      { $sort: { totalDistance: -1 } }
+    ]);
+    
+    const rankingPosition = allUsers.findIndex(u => u._id.toString() === id) + 1;
+
+    const stats = {
+      totalMovements,
+      totalDistance: parseFloat(totalDistance.toFixed(2)),
+      averageDistance: parseFloat(averageDistance.toFixed(2)),
+      maxSpeed: parseFloat(maxSpeed.toFixed(2)),
+      totalTime: Math.round(totalTime),
+      lastActivity,
+      rankingPosition: rankingPosition || 0
+    };
+
+    console.log('✅ Estadísticas calculadas:', stats);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
+// Obtener movimientos de un usuario específico
+exports.getUserMovements = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('📍 Obteniendo movimientos del usuario:', id);
+
+    // Verificar que el usuario existe
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Construir query con filtros opcionales
+    const query = { 
+      user_id: id,
+      activo: true 
+    };
+
+    // Filtros opcionales desde query params
+    if (req.query.estado) {
+      query.estado = req.query.estado;
+    }
+    if (req.query.region) {
+      query.region = req.query.region;
+    }
+    if (req.query.tipo_movimiento) {
+      query.tipo_movimiento = req.query.tipo_movimiento;
+    }
+    if (req.query.fecha_inicio && req.query.fecha_fin) {
+      query.fecha = {
+        $gte: new Date(req.query.fecha_inicio),
+        $lte: new Date(req.query.fecha_fin)
+      };
+    }
+
+    // Obtener movimientos ordenados por fecha (más recientes primero)
+    const movements = await Movement.find(query)
+      .sort({ fecha: -1 })
+      .limit(parseInt(req.query.limit) || 100);
+
+    console.log(`✅ ${movements.length} movimientos encontrados`);
+
+    res.json({
+      success: true,
+      data: movements,
+      count: movements.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo movimientos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};

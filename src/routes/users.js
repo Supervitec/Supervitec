@@ -48,6 +48,34 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ GET /api/v1/users/:id/stats - Obtener estadísticas de un usuario
+router.get('/:id/stats', validateObjectId, async (req, res) => {
+  try {
+    const adminController = require('../controllers/adminController');
+    await adminController.getUserStats(req, res);
+  } catch (error) {
+    console.error('❌ Error en ruta stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// ✅ GET /api/v1/users/:id/movements - Obtener movimientos de un usuario
+router.get('/:id/movements', validateObjectId, async (req, res) => {
+  try {
+    const adminController = require('../controllers/adminController');
+    await adminController.getUserMovements(req, res);
+  } catch (error) {
+    console.error('❌ Error en ruta movements:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
 // ✅ GET /api/v1/users/:id - Obtener usuario específico por ID
 router.get('/:id', validateObjectId, async (req, res) => {
   try {
