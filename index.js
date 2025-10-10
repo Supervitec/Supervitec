@@ -14,7 +14,7 @@ const authRoutes = require('./src/routes/auth');
 const dashboardRoutes = require('./src/routes/dashboard'); 
 const userRoutes = require('./src/routes/users');
 const movementRoutes = require('./src/routes/movements');
-
+const adminRoutes = require('./src/routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,7 +31,7 @@ const limiter = rateLimit({
 
 app.use(limiter); // Aplicar rate limiting
 app.use(cors({ 
-  origin: process.env.NODE_ENV === 'production' ? 'https://mi-dominio.com' : '*',
+  origin: process.env.NODE_ENV === 'production' ? 'https://back-end-fjnh.onrender.com' : '*',
   credentials: true
 }));
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -44,7 +44,8 @@ app.use((req, res, next) => {
 });
 
 // Rutas API
-app.use('/api/v1/auth', authRoutes);  
+app.use('/api/v1/auth', authRoutes); 
+app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/movements', movementRoutes);
@@ -102,7 +103,7 @@ const startServer = async () => {
   try {
     const User = require('./src/models/User');
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'supervitecingenieriasas@gmail.com';
-    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || '5up3r_v1t3c_4dm1n_2024!';
+    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || '5up3r_v1t3c';
 
     let admin = await User.findOne({ correo_electronico: adminEmail });
 

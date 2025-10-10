@@ -7,7 +7,7 @@ const validarCampos = require('../middlewares/validarCampos');
 
 
 
-// Login de administrador (NO requiere auth)
+// Login de administrador 
 router.post('/login', adminController.adminLogin);
 router.put(
   '/users/:id',
