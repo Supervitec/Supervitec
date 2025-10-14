@@ -23,11 +23,7 @@ router.put(
 );
 
 router.delete('/users/:id', adminAuth, adminController.deleteUser);
-
-// Obtener estadísticas de un usuario específico
 router.get('/users/:id/stats', adminAuth, adminController.getUserStats);
-
-// Obtener movimientos de un usuario específico
 router.get('/users/:id/movements', adminAuth, adminController.getUserMovements);
 
 // ===== GESTIÓN DE MOVIMIENTOS (requieren auth) =====
@@ -58,18 +54,12 @@ router.get('/export/:month/:year/:region', adminAuth, adminController.exportMove
 router.get('/config', adminAuth, adminController.getAdminConfig);
 router.put('/config', adminAuth, adminController.updateAdminConfig);
 
-router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
-
-router.post('/export-all-data', adminAuth, adminController.exportAllData);
-router.post('/reset-system', adminAuth, adminController.resetSystem);
-
-router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
-
-// ===== GESTIÓN DE USUARIOS =====
+// ===== GESTIÓN AVANZADA DE USUARIOS =====
 router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
 router.put('/users/edit/:userId', adminAuth, adminController.editUser);
 router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
 router.post('/users/create', adminAuth, adminController.createUser);
+router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
 
 // ===== SISTEMA =====
 router.post('/export-all-data', adminAuth, adminController.exportAllData);
