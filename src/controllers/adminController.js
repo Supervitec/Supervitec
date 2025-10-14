@@ -451,3 +451,483 @@ exports.updateAdminConfig = async (req, res) => {
     });
   }
 };
+
+/**
+ * Cambiar contraseña de un usuario (solo admin)
+ */
+exports.changeUserPassword = async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+    
+    console.log(`🔐 Admin cambiando contraseña del usuario: ${userId}`);
+    
+    if (!userId || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'userId y newPassword son requeridos'
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+    
+    user.contrasena = newPassword;
+    await user.save();
+    
+    console.log(`✅ Contraseña actualizada para usuario: ${user.nombre_completo}`);
+    
+    res.json({
+      success: true,
+      mensaje: `Contraseña actualizada para ${user.nombre_completo}`,
+    });
+  } catch (error) {
+    console.error('❌ Error cambiando contraseña:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al cambiar la contraseña',
+      error: error.message,
+    });
+  }
+};
+
+// ===== SISTEMA =====
+
+/**
+ * Exportar todos los datos del sistema y enviar por correo
+ */
+exports.exportAllData = async (req, res) => {
+  try {
+    console.log('📤 Iniciando exportación completa de datos...');
+    
+    // Obtener todos los datos
+    const users = await User.find().select('-contrasena').lean();
+    const movements = await Movement.find().populate('user_id', 'nombre_completo correo_electronico').lean();
+    const admins = await Admin.find().select('-contrasena').lean();
+    
+    // Preparar datos para Excel
+    const usersData = users.map(u => ({
+      Nombre: u.nombre_completo,
+      Correo: u.correo_electronico,
+      Región: u.region,
+      Transporte: u.transporte,
+      Rol: u.rol,
+      Fecha_Registro: u.created_at
+    }));
+    
+    const movementsData = movements.map(m => ({
+      Usuario: m.user_id?.nombre_completo || 'N/A',
+      Fecha: m.fecha,
+      Región: m.region,
+      Distancia_km: m.distancia_recorrida,
+      Tiempo_min: m.tiempo_total,
+      Velocidad_Prom: m.velocidad_promedio,
+      Velocidad_Max: m.velocidad_maxima,
+      Lugar_Inicio: m.lugar_start,
+      Lugar_Fin: m.lugar_end
+    }));
+    
+    // Crear Excel
+    const XLSX = require('xlsx');
+    const wb = XLSX.utils.book_new();
+    
+    const wsUsers = XLSX.utils.json_to_sheet(usersData);
+    const wsMovements = XLSX.utils.json_to_sheet(movementsData);
+    
+    XLSX.utils.book_append_sheet(wb, wsUsers, "Usuarios");
+    XLSX.utils.book_append_sheet(wb, wsMovements, "Movimientos");
+    
+    const excelBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    
+    // Enviar por correo usando nodemailer
+    const nodemailer = require('nodemailer');
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'supervitecingenieriasas@gmail.com',
+        pass: process.env.EMAIL_PASS // Necesitas configurar esto
+      }
+    });
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'supervitecingenieriasas@gmail.com',
+      to: 'supervitecingenieriasas@gmail.com',
+      subject: `Exportación Completa de Datos - ${new Date().toLocaleDateString()}`,
+      text: `Backup completo del sistema adjunto.\n\nTotal Usuarios: ${users.length}\nTotal Movimientos: ${movements.length}\nFecha: ${new Date().toLocaleString()}`,
+      attachments: [
+        {
+          filename: `backup_completo_${Date.now()}.xlsx`,
+          content: excelBuffer
+        }
+      ]
+    };
+    
+    await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Exportación enviada por correo exitosamente');
+    
+    res.json({
+      success: true,
+      mensaje: 'Exportación completa enviada a supervitecingenieriasas@gmail.com',
+      stats: {
+        usuarios: users.length,
+        movimientos: movements.length,
+        admins: admins.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error exportando datos:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al exportar datos',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Reiniciar sistema (limpiar caché del lado del servidor)
+ */
+exports.resetSystem = async (req, res) => {
+  try {
+    console.log('🔄 Reiniciando sistema...');
+    
+    // Aquí puedes agregar lógica adicional como:
+    // - Limpiar logs temporales
+    // - Reiniciar contadores
+    // - Limpiar caché del servidor
+    
+    res.json({
+      success: true,
+      mensaje: 'Sistema reiniciado correctamente'
+    });
+  } catch (error) {
+    console.error('❌ Error reiniciando sistema:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al reiniciar el sistema',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Cambiar contraseña de un usuario (solo admin)
+ */
+exports.changeUserPassword = async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+    
+    console.log(`🔐 Admin cambiando contraseña del usuario: ${userId}`);
+    
+    if (!userId || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'userId y newPassword son requeridos'
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+    
+    user.contrasena = newPassword;
+    await user.save();
+    
+    console.log(`✅ Contraseña actualizada para usuario: ${user.nombre_completo}`);
+    
+    res.json({
+      success: true,
+      mensaje: `Contraseña actualizada para ${user.nombre_completo}`,
+    });
+  } catch (error) {
+    console.error('❌ Error cambiando contraseña:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al cambiar la contraseña',
+      error: error.message,
+    });
+  }
+};
+
+// ===== GESTIÓN DE USUARIOS (NUEVO) =====
+
+/**
+ * Listar todos los usuarios con búsqueda
+ */
+exports.getAllUsersForManagement = async (req, res) => {
+  try {
+    const { search } = req.query;
+    
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { nombre_completo: { $regex: search, $options: 'i' } },
+          { correo_electronico: { $regex: search, $options: 'i' } },
+          { region: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+    
+    const users = await User.find(query).select('-contrasena').sort({ created_at: -1 });
+    
+    console.log(`✅ ${users.length} usuarios encontrados`);
+    
+    res.json({
+      success: true,
+      users,
+      total: users.length
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo usuarios:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al obtener usuarios',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Editar usuario (admin puede editar todo)
+ */
+exports.editUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    
+    console.log(`✏️ Admin editando usuario: ${userId}`);
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+    
+    // Campos permitidos para editar
+    const allowedFields = [
+      'nombre_completo',
+      'correo_electronico',
+      'region',
+      'transporte',
+      'rol'
+    ];
+    
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        user[field] = updates[field];
+      }
+    });
+    
+    await user.save();
+    
+    console.log(`✅ Usuario actualizado: ${user.nombre_completo}`);
+    
+    res.json({
+      success: true,
+      mensaje: 'Usuario actualizado correctamente',
+      user: {
+        _id: user._id,
+        nombre_completo: user.nombre_completo,
+        correo_electronico: user.correo_electronico,
+        region: user.region,
+        transporte: user.transporte,
+        rol: user.rol
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error editando usuario:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al editar usuario',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Eliminar usuario permanentemente
+ */
+exports.deleteUserPermanently = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`🗑️ Admin eliminando usuario: ${userId}`);
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+    
+    const userName = user.nombre_completo;
+    
+    // Eliminar también todos sus movimientos
+    await Movement.deleteMany({ user_id: userId });
+    
+    // Eliminar usuario
+    await User.findByIdAndDelete(userId);
+    
+    console.log(`✅ Usuario ${userName} eliminado permanentemente`);
+    
+    res.json({
+      success: true,
+      mensaje: `Usuario ${userName} eliminado correctamente`,
+    });
+  } catch (error) {
+    console.error('❌ Error eliminando usuario:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al eliminar usuario',
+      error: error.message,
+    });
+  }
+};
+
+// ===== SISTEMA =====
+
+/**
+ * Exportar todos los datos del sistema y enviar por correo
+ */
+exports.exportAllData = async (req, res) => {
+  try {
+    console.log('📤 Iniciando exportación completa de datos...');
+    
+    // Obtener todos los datos
+    const users = await User.find().select('-contrasena').lean();
+    const movements = await Movement.find().populate('user_id', 'nombre_completo correo_electronico').lean();
+    const admins = await Admin.find().select('-contrasena').lean();
+    
+    // Preparar datos para Excel
+    const usersData = users.map(u => ({
+      Nombre: u.nombre_completo,
+      Correo: u.correo_electronico,
+      Región: u.region,
+      Transporte: u.transporte,
+      Rol: u.rol,
+      Fecha_Registro: u.created_at
+    }));
+    
+    const movementsData = movements.map(m => ({
+      Usuario: m.user_id?.nombre_completo || 'N/A',
+      Fecha: m.fecha,
+      Región: m.region,
+      Distancia_km: m.distancia_recorrida,
+      Tiempo_min: m.tiempo_total,
+      Velocidad_Prom: m.velocidad_promedio,
+      Velocidad_Max: m.velocidad_maxima,
+      Lugar_Inicio: m.lugar_start,
+      Lugar_Fin: m.lugar_end
+    }));
+    
+    // Crear Excel
+    const wb = XLSX.utils.book_new();
+    
+    const wsUsers = XLSX.utils.json_to_sheet(usersData);
+    const wsMovements = XLSX.utils.json_to_sheet(movementsData);
+    
+    XLSX.utils.book_append_sheet(wb, wsUsers, "Usuarios");
+    XLSX.utils.book_append_sheet(wb, wsMovements, "Movimientos");
+    
+    const excelBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    
+    // Enviar por correo usando nodemailer
+    const nodemailer = require('nodemailer');
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'supervitecingenieriasas@gmail.com',
+        pass: process.env.EMAIL_PASS
+      }
+    });
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'supervitecingenieriasas@gmail.com',
+      to: 'supervitecingenieriasas@gmail.com',
+      subject: `Exportación Completa de Datos - ${new Date().toLocaleDateString()}`,
+      text: `Backup completo del sistema adjunto.\n\nTotal Usuarios: ${users.length}\nTotal Movimientos: ${movements.length}\nFecha: ${new Date().toLocaleString()}`,
+      attachments: [
+        {
+          filename: `backup_completo_${Date.now()}.xlsx`,
+          content: excelBuffer
+        }
+      ]
+    };
+    
+    await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Exportación enviada por correo exitosamente');
+    
+    res.json({
+      success: true,
+      mensaje: 'Exportación completa enviada a supervitecingenieriasas@gmail.com',
+      stats: {
+        usuarios: users.length,
+        movimientos: movements.length,
+        admins: admins.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error exportando datos:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al exportar datos',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Reiniciar sistema (limpiar caché del lado del servidor)
+ */
+exports.resetSystem = async (req, res) => {
+  try {
+    console.log('🔄 Reiniciando sistema...');
+    
+    // Aquí puedes agregar lógica adicional como:
+    // - Limpiar logs temporales
+    // - Reiniciar contadores
+    // - Limpiar caché del servidor
+    
+    res.json({
+      success: true,
+      mensaje: 'Sistema reiniciado correctamente. Por favor reinicia la aplicación.'
+    });
+  } catch (error) {
+    console.error('❌ Error reiniciando sistema:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al reiniciar el sistema',
+      error: error.message,
+    });
+  }
+};

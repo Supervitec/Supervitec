@@ -54,8 +54,24 @@ router.delete('/movements/:id', adminAuth, adminController.deleteMovement);
 router.get('/export/:month/:year', adminAuth, adminController.exportMovements);
 router.get('/export/:month/:year/:region', adminAuth, adminController.exportMovements);
 
-// ===== CONFIGURACIÓN DEL ADMINISTRADOR (requiere auth) ===== ✅ CORREGIDO
+// ===== CONFIGURACIÓN DEL ADMINISTRADOR =====
 router.get('/config', adminAuth, adminController.getAdminConfig);
 router.put('/config', adminAuth, adminController.updateAdminConfig);
+
+router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
+
+router.post('/export-all-data', adminAuth, adminController.exportAllData);
+router.post('/reset-system', adminAuth, adminController.resetSystem);
+
+router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
+
+// ===== GESTIÓN DE USUARIOS =====
+router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
+router.put('/users/edit/:userId', adminAuth, adminController.editUser);
+router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
+
+// ===== SISTEMA =====
+router.post('/export-all-data', adminAuth, adminController.exportAllData);
+router.post('/reset-system', adminAuth, adminController.resetSystem);
 
 module.exports = router;
