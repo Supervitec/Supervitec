@@ -69,6 +69,7 @@ router.post('/change-user-password', adminAuth, adminController.changeUserPasswo
 router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
 router.put('/users/edit/:userId', adminAuth, adminController.editUser);
 router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
+router.post('/users/create', adminAuth, adminController.createUser);
 
 // ===== SISTEMA =====
 router.post('/export-all-data', adminAuth, adminController.exportAllData);
