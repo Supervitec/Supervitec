@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Movement = require('../models/Movement');
 const jwt = require('jsonwebtoken');
 const XLSX = require('xlsx');
+const AdminConfig = require('../models/AdminConfig');
+
 
 const JWT_SECRET = process.env.JWT_SECRET || '5up3r_v1t3c';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || '5up3r_v1t3c';
@@ -331,4 +333,123 @@ exports.getUserMovements = async (req, res) => {
       error: error.message
     });
   }
+
+  exports.getAdminConfig = async (req, res) => {
+  try {
+    console.log('📋 Obteniendo configuración del admin:', req.user.id);
+    
+    const config = await AdminConfig.getOrCreateConfig(req.user.id);
+    
+    res.json({
+      success: true,
+      config: {
+        notificacionesPush: config.notificacionesPush.enabled,
+        reportesAutomaticos: config.reportesAutomaticos.enabled,
+        backupAutomatico: config.backupAutomatico.enabled,
+        alertasDeSeguridad: config.alertasDeSeguridad.enabled,
+        // Detalles adicionales
+        reportesConfig: {
+          frecuencia: config.reportesAutomaticos.frecuencia,
+          hora: config.reportesAutomaticos.hora,
+          ultimoReporte: config.reportesAutomaticos.ultimoReporte,
+        },
+        backupConfig: {
+          frecuencia: config.backupAutomatico.frecuencia,
+          hora: config.backupAutomatico.hora,
+          ultimoBackup: config.backupAutomatico.ultimoBackup,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo configuración:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error obteniendo configuración',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Actualizar configuración del administrador
+ */
+exports.updateAdminConfig = async (req, res) => {
+  try {
+    const { setting, value } = req.body;
+    
+    console.log(`⚙️ Actualizando ${setting} a ${value} para admin:`, req.user.id);
+    
+    if (!setting || value === undefined) {
+      return res.status(400).json({
+        success: false,
+        mensaje: 'Faltan parámetros requeridos',
+      });
+    }
+    
+    const config = await AdminConfig.getOrCreateConfig(req.user.id);
+    
+    // Actualizar el setting correspondiente
+    switch (setting) {
+      case 'notificacionesPush':
+        config.notificacionesPush.enabled = value;
+        config.notificacionesPush.lastUpdated = new Date();
+        break;
+        
+      case 'reportesAutomaticos':
+        config.reportesAutomaticos.enabled = value;
+        config.reportesAutomaticos.lastUpdated = new Date();
+        
+        // Si se activa, programar primer reporte
+        if (value && !config.reportesAutomaticos.ultimoReporte) {
+          // Aquí puedes agregar lógica para programar el primer reporte
+          console.log('📊 Reportes automáticos activados');
+        }
+        break;
+        
+      case 'backupAutomatico':
+        config.backupAutomatico.enabled = value;
+        config.backupAutomatico.lastUpdated = new Date();
+        
+        // Si se activa, programar primer backup
+        if (value && !config.backupAutomatico.ultimoBackup) {
+          // Aquí puedes agregar lógica para programar el primer backup
+          console.log('💾 Backup automático activado');
+        }
+        break;
+        
+      case 'alertasDeSeguridad':
+        config.alertasDeSeguridad.enabled = value;
+        config.alertasDeSeguridad.lastUpdated = new Date();
+        break;
+        
+      default:
+        return res.status(400).json({
+          success: false,
+          mensaje: 'Configuración no válida',
+        });
+    }
+    
+    await config.save();
+    
+    console.log(`✅ Configuración ${setting} actualizada exitosamente`);
+    
+    res.json({
+      success: true,
+      mensaje: `${setting} actualizado correctamente`,
+      config: {
+        notificacionesPush: config.notificacionesPush.enabled,
+        reportesAutomaticos: config.reportesAutomaticos.enabled,
+        backupAutomatico: config.backupAutomatico.enabled,
+        alertasDeSeguridad: config.alertasDeSeguridad.enabled,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error actualizando configuración:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error actualizando configuración',
+      error: error.message,
+    });
+  }
+};
 };

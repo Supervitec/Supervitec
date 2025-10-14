@@ -4,7 +4,7 @@ const adminController = require('../controllers/adminController');
 const adminAuth = require('../middlewares/adminAuth'); 
 const { body } = require('express-validator');
 const validarCampos = require('../middlewares/validarCampos');
-
+const authMiddleware = require('../middlewares/auth');
 
 
 // Login de administrador 
@@ -42,5 +42,7 @@ router.delete('/users/:id', adminAuth, adminController.deleteUser);
 router.delete('/movements/:id', adminAuth, adminController.deleteMovement);
 router.get('/export/:month/:year', adminAuth, adminController.exportMovements);
 router.get('/export/:month/:year/:region', adminAuth, adminController.exportMovements);
+router.get('/config', authMiddleware, adminAuth, adminController.getConfig);
+router.put('/config', authMiddleware, adminAuth, adminController.updateAdminConfig);
 
 module.exports = router;
