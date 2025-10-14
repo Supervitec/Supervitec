@@ -1,14 +1,14 @@
 const Admin = require('../models/admin');
 const User = require('../models/User');
 const Movement = require('../models/Movement');
+const AdminConfig = require('../models/AdminConfig');
 const jwt = require('jsonwebtoken');
 const XLSX = require('xlsx');
-const AdminConfig = require('../models/AdminConfig');
-
 
 const JWT_SECRET = process.env.JWT_SECRET || '5up3r_v1t3c';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || '5up3r_v1t3c';
 
+// ===== LOGIN Y AUTENTICACIÓN =====
 
 // Login del administrador
 exports.adminLogin = async (req, res) => {
@@ -32,7 +32,7 @@ exports.adminLogin = async (req, res) => {
 
     res.json({ 
       token, 
-      refresh_token,  // Agregado
+      refresh_token,
       correo_electronico: admin.correo_electronico 
     });
   } catch (e) {
@@ -41,7 +41,7 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
-// Middleware para proteger rutas admin (igual, ok)
+// Middleware para proteger rutas admin
 exports.adminAuth = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ mensaje: 'Falta token de autorización' });
@@ -56,6 +56,8 @@ exports.adminAuth = (req, res, next) => {
   }
 };
 
+// ===== GESTIÓN DE USUARIOS =====
+
 // Consultar usuarios con filtro opcional por región
 exports.getUsers = async (req, res) => {
   try {
@@ -65,19 +67,6 @@ exports.getUsers = async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error('Error obtener usuarios:', error);
-    res.status(500).json({ mensaje: 'Error en el servidor' });
-  }
-};
-
-// Consultar movimientos con filtro opcional por usuario
-exports.getMovements = async (req, res) => {
-  try {
-    const { Usuario } = req.query;
-    const query = Usuario ? { Usuario } : {};
-    const movements = await Movement.find(query);
-    res.json(movements);
-  } catch (error) {
-    console.error('Error obtener movimientos:', error);
     res.status(500).json({ mensaje: 'Error en el servidor' });
   }
 };
@@ -108,12 +97,38 @@ exports.actualizarUsuario = async (req, res) => {
   }
 };
 
+// Eliminar usuario
+exports.deleteUser = async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Usuario eliminado exitosamente.' });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ mensaje: 'Error en el servidor' });
+  }
+};
+
+// ===== GESTIÓN DE MOVIMIENTOS =====
+
+// Consultar movimientos con filtro opcional por usuario
+exports.getMovements = async (req, res) => {
+  try {
+    const { Usuario } = req.query;
+    const query = Usuario ? { Usuario } : {};
+    const movements = await Movement.find(query);
+    res.json(movements);
+  } catch (error) {
+    console.error('Error obtener movimientos:', error);
+    res.status(500).json({ mensaje: 'Error en el servidor' });
+  }
+};
+
 // Actualizar movimiento (solo campos permitidos)
 exports.actualizarMovimiento = async (req, res) => {
   try {
     const id = req.params.id;
     const updates = req.body;
-    const camposPermitidos = ['distancia_recorrida', 'velocidad_promedio', 'velocidad_maxima', 'tiempo_total', 'fecha', 'region'];  // Alineado con Movement.js
+    const camposPermitidos = ['distancia_recorrida', 'velocidad_promedio', 'velocidad_maxima', 'tiempo_total', 'fecha', 'region'];
     const actualizacionesFiltradas = {};
     camposPermitidos.forEach(campo => {
       if (updates[campo] !== undefined) {
@@ -131,17 +146,6 @@ exports.actualizarMovimiento = async (req, res) => {
   }
 };
 
-// Eliminar usuario
-exports.deleteUser = async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ mensaje: 'Usuario eliminado exitosamente.' });
-  } catch (error) {
-    console.error('Error al eliminar usuario:', error);
-    res.status(500).json({ mensaje: 'Error en el servidor' });
-  }
-};
-
 // Eliminar movimiento
 exports.deleteMovement = async (req, res) => {
   try {
@@ -152,6 +156,8 @@ exports.deleteMovement = async (req, res) => {
     res.status(500).json({ mensaje: 'Error en el servidor' });
   }
 };
+
+// ===== EXPORTACIÓN =====
 
 // Exportar movimientos a Excel
 exports.exportMovements = async (req, res) => {
@@ -198,13 +204,14 @@ exports.exportMovements = async (req, res) => {
   }
 };
 
+// ===== ESTADÍSTICAS DE USUARIO =====
+
 // Obtener estadísticas de un usuario específico
 exports.getUserStats = async (req, res) => {
   try {
     const { id } = req.params;
     console.log('📊 Obteniendo estadísticas del usuario:', id);
 
-    // Verificar que el usuario existe
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
@@ -213,13 +220,11 @@ exports.getUserStats = async (req, res) => {
       });
     }
 
-    // Calcular estadísticas desde los movimientos
     const movements = await Movement.find({ 
       user_id: id,
       activo: true 
     });
 
-    // Calcular métricas
     const totalMovements = movements.length;
     const totalDistance = movements.reduce((sum, mov) => sum + (mov.distancia_recorrida || 0), 0);
     const averageDistance = totalMovements > 0 ? totalDistance / totalMovements : 0;
@@ -228,12 +233,10 @@ exports.getUserStats = async (req, res) => {
       : 0;
     const totalTime = movements.reduce((sum, mov) => sum + (mov.tiempo_total || 0), 0);
     
-    // Última actividad
     const lastActivity = movements.length > 0
       ? movements.sort((a, b) => b.fecha - a.fecha)[0].fecha
       : null;
 
-    // Calcular posición en ranking (por distancia total)
     const allUsers = await Movement.aggregate([
       { $match: { activo: true } },
       { 
@@ -280,7 +283,6 @@ exports.getUserMovements = async (req, res) => {
     const { id } = req.params;
     console.log('📍 Obteniendo movimientos del usuario:', id);
 
-    // Verificar que el usuario existe
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
@@ -289,13 +291,11 @@ exports.getUserMovements = async (req, res) => {
       });
     }
 
-    // Construir query con filtros opcionales
     const query = { 
       user_id: id,
       activo: true 
     };
 
-    // Filtros opcionales desde query params
     if (req.query.estado) {
       query.estado = req.query.estado;
     }
@@ -312,7 +312,6 @@ exports.getUserMovements = async (req, res) => {
       };
     }
 
-    // Obtener movimientos ordenados por fecha (más recientes primero)
     const movements = await Movement.find(query)
       .sort({ fecha: -1 })
       .limit(parseInt(req.query.limit) || 100);
@@ -333,12 +332,18 @@ exports.getUserMovements = async (req, res) => {
       error: error.message
     });
   }
+}; // ✅ CIERRE CORRECTO AQUÍ
 
-  exports.getAdminConfig = async (req, res) => {
+// ===== CONFIGURACIÓN DEL ADMINISTRADOR ===== ✅ NUEVO
+
+/**
+ * Obtener configuración del administrador
+ */
+exports.getAdminConfig = async (req, res) => {
   try {
-    console.log('📋 Obteniendo configuración del admin:', req.user.id);
+    console.log('📋 Obteniendo configuración del admin:', req.admin.id); // ✅ req.admin, no req.user
     
-    const config = await AdminConfig.getOrCreateConfig(req.user.id);
+    const config = await AdminConfig.getOrCreateConfig(req.admin.id);
     
     res.json({
       success: true,
@@ -347,7 +352,6 @@ exports.getUserMovements = async (req, res) => {
         reportesAutomaticos: config.reportesAutomaticos.enabled,
         backupAutomatico: config.backupAutomatico.enabled,
         alertasDeSeguridad: config.alertasDeSeguridad.enabled,
-        // Detalles adicionales
         reportesConfig: {
           frecuencia: config.reportesAutomaticos.frecuencia,
           hora: config.reportesAutomaticos.hora,
@@ -377,7 +381,7 @@ exports.updateAdminConfig = async (req, res) => {
   try {
     const { setting, value } = req.body;
     
-    console.log(`⚙️ Actualizando ${setting} a ${value} para admin:`, req.user.id);
+    console.log(`⚙️ Actualizando ${setting} a ${value} para admin:`, req.admin.id); // ✅ req.admin, no req.user
     
     if (!setting || value === undefined) {
       return res.status(400).json({
@@ -386,9 +390,8 @@ exports.updateAdminConfig = async (req, res) => {
       });
     }
     
-    const config = await AdminConfig.getOrCreateConfig(req.user.id);
+    const config = await AdminConfig.getOrCreateConfig(req.admin.id);
     
-    // Actualizar el setting correspondiente
     switch (setting) {
       case 'notificacionesPush':
         config.notificacionesPush.enabled = value;
@@ -399,9 +402,7 @@ exports.updateAdminConfig = async (req, res) => {
         config.reportesAutomaticos.enabled = value;
         config.reportesAutomaticos.lastUpdated = new Date();
         
-        // Si se activa, programar primer reporte
         if (value && !config.reportesAutomaticos.ultimoReporte) {
-          // Aquí puedes agregar lógica para programar el primer reporte
           console.log('📊 Reportes automáticos activados');
         }
         break;
@@ -410,9 +411,7 @@ exports.updateAdminConfig = async (req, res) => {
         config.backupAutomatico.enabled = value;
         config.backupAutomatico.lastUpdated = new Date();
         
-        // Si se activa, programar primer backup
         if (value && !config.backupAutomatico.ultimoBackup) {
-          // Aquí puedes agregar lógica para programar el primer backup
           console.log('💾 Backup automático activado');
         }
         break;
@@ -451,5 +450,4 @@ exports.updateAdminConfig = async (req, res) => {
       error: error.message,
     });
   }
-};
 };
