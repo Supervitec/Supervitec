@@ -271,7 +271,7 @@ exports.exportMovements = async (req, res) => {
         $gte: new Date(parseInt(year), parseInt(month) - 1, 1),
         $lt: new Date(parseInt(year), parseInt(month), 1),
       },
-      activo: true // ✅ AGREGAR para no exportar eliminados
+      activo: true //  AGREGAR para no exportar eliminados
     };
     if (region) match.region = region;
 
@@ -281,7 +281,7 @@ exports.exportMovements = async (req, res) => {
 
     console.log(`📊 ${data.length} movimientos encontrados`);
 
-    // ✅ LOG PARA VERIFICAR tiempo_total
+    //  LOG PARA VERIFICAR tiempo_total
     if (data.length > 0) {
       console.log('🔍 Primer movimiento tiempo_total:', data[0].tiempo_total);
     }
@@ -293,13 +293,13 @@ exports.exportMovements = async (req, res) => {
       Transporte: mov.user_id?.transporte || 'N/A',
       Rol: mov.user_id?.rol || 'N/A',
       Fecha: mov.fecha ? mov.fecha.toISOString().substring(0, 10) : 'N/A',
-      'Distancia (km)': ((mov.distancia_recorrida || 0) / 1000).toFixed(2), // ✅ Convertir a km
+      'Distancia (km)': ((mov.distancia_recorrida || 0) / 1000).toFixed(2), //  Convertir a km
       'Velocidad Promedio (km/h)': (mov.velocidad_promedio || 0).toFixed(1),
       'Velocidad Máxima (km/h)': (mov.velocidad_maxima || 0).toFixed(1),
-      'Tiempo (minutos)': mov.tiempo_total || 0 // ✅ Ya está en minutos
+      'Tiempo (minutos)': mov.tiempo_total || 0 //  Ya está en minutos
     }));
 
-    console.log('✅ Primer registro formateado:', records[0]);
+    console.log(' Primer registro formateado:', records[0]);
 
     const ws = XLSX.utils.json_to_sheet(records);
     const wb = XLSX.utils.book_new();
@@ -310,7 +310,7 @@ exports.exportMovements = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=supervitec_${month}_${year}.xlsx`);
     res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     
-    console.log('✅ Archivo Excel enviado');
+    console.log(' Archivo Excel enviado');
     
     res.send(buf);
   } catch (err) {

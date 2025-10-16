@@ -24,24 +24,24 @@ router.post('/', auth, async (req, res) => {
     console.log('📦 Body completo:', JSON.stringify(req.body, null, 2));
     
     const {
-      user_id,                // ✅ AGREGAR
+      user_id,                
       tipo_movimiento,
       start_location,
-      end_location,           // ✅ AGREGAR
-      distancia_recorrida,    // ✅ AGREGAR
-      velocidad_promedio,     // ✅ AGREGAR
-      velocidad_maxima,       // ✅ AGREGAR
-      tiempo_total,           // ✅ AGREGAR
-      fecha,                  // ✅ AGREGAR
-      fecha_fin,              // ✅ AGREGAR
+      end_location,           
+      distancia_recorrida,    
+      velocidad_promedio,     
+      velocidad_maxima,       
+      tiempo_total,           
+      fecha,                  
+      fecha_fin,              
       observaciones,
       region,
       transporte_utilizado,
-      ruta_seguida,           // ✅ AGREGAR
-      estado,                 // ✅ AGREGAR
+      ruta_seguida,           
+      estado,                 
     } = req.body;
 
-    // ✅ DETERMINAR user_id (puede venir del body o del token)
+    // DETERMINAR user_id 
     const userId = user_id || req.user?.id;
 
     if (!userId) {
@@ -59,7 +59,7 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // ✅ VALIDAR end_location SI SE PROPORCIONA
+    // VALIDAR end_location SI SE PROPORCIONA
     if (end_location && (!end_location.latitude || !end_location.longitude)) {
       return res.status(400).json({
         success: false,
@@ -67,7 +67,7 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // ✅ VALIDAR REGIÓN
+    // VALIDAR REGIÓN
     const regionesValidas = ['Caldas', 'Risaralda', 'Quindío'];
     const regionFinal = region || 'Caldas';
     
@@ -87,7 +87,7 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // ✅ LOG ANTES DE CREAR
+    // LOG ANTES DE CREAR
     console.log('💾 Creando movimiento con:');
     console.log('  - user_id:', userId);
     console.log('  - distancia_recorrida:', distancia_recorrida, 'metros');
@@ -97,7 +97,7 @@ router.post('/', auth, async (req, res) => {
     console.log('  - region:', regionFinal);
     console.log('  - ruta_seguida:', ruta_seguida?.length || 0, 'puntos');
 
-    // ✅ CREAR MOVIMIENTO CON TODOS LOS CAMPOS
+    // CREAR MOVIMIENTO CON TODOS LOS CAMPOS
     const nuevoMovimiento = new Movement({
       user_id: userId,
       
@@ -115,7 +115,7 @@ router.post('/', auth, async (req, res) => {
         direccion: end_location.direccion
       } : undefined,
       
-      // ✅ DATOS NUMÉRICOS (ASEGURAR QUE SEAN NÚMEROS)
+      // DATOS NUMÉRICOS (ASEGURAR QUE SEAN NÚMEROS)
       distancia_recorrida: Number(distancia_recorrida) || 0,
       velocidad_promedio: Number(velocidad_promedio) || 0,
       velocidad_maxima: Number(velocidad_maxima) || 0,
@@ -131,7 +131,7 @@ router.post('/', auth, async (req, res) => {
       transporte_utilizado: transporte_utilizado || usuario.transporte || 'carro',
       estado: estado || (end_location ? 'completado' : 'iniciado'),
       
-      // ✅ RUTA SEGUIDA (opcional)
+      // RUTA SEGUIDA (opcional)
       ruta_seguida: ruta_seguida || [],
       
       // Observaciones
@@ -141,8 +141,8 @@ router.post('/', auth, async (req, res) => {
     const movimientoGuardado = await nuevoMovimiento.save();
     await movimientoGuardado.populate('user_id', 'nombre_completo correo_electronico');
 
-    // ✅ LOG DESPUÉS DE GUARDAR
-    console.log('✅ Movimiento guardado exitosamente:', {
+    // LOG DESPUÉS DE GUARDAR
+    console.log('Movimiento guardado exitosamente:', {
       id: movimientoGuardado._id,
       distancia: movimientoGuardado.distancia_recorrida,
       velocidad_max: movimientoGuardado.velocidad_maxima,
