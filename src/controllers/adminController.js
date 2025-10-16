@@ -141,7 +141,7 @@ exports.getUserStats = async (req, res) => {
       rankingPosition: rankingPosition || 0
     };
 
-    console.log('✅ Estadísticas calculadas:', stats);
+    console.log(' Estadísticas calculadas:', stats);
 
     res.json({
       success: true,
@@ -149,7 +149,7 @@ exports.getUserStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
+    console.error(' Error obteniendo estadísticas:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -190,7 +190,7 @@ exports.getUserMovements = async (req, res) => {
       .sort({ fecha: -1 })
       .limit(parseInt(req.query.limit) || 100);
 
-    console.log(`✅ ${movements.length} movimientos encontrados`);
+    console.log(` ${movements.length} movimientos encontrados`);
 
     res.json({
       success: true,
@@ -199,7 +199,7 @@ exports.getUserMovements = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo movimientos:', error);
+    console.error(' Error obteniendo movimientos:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -332,7 +332,7 @@ exports.getAdminConfig = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error obteniendo configuración:', error);
+    console.error(' Error obteniendo configuración:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error obteniendo configuración',
@@ -394,7 +394,7 @@ exports.updateAdminConfig = async (req, res) => {
     
     await config.save();
     
-    console.log(`✅ Configuración ${setting} actualizada exitosamente`);
+    console.log(` Configuración ${setting} actualizada exitosamente`);
     
     res.json({
       success: true,
@@ -407,7 +407,7 @@ exports.updateAdminConfig = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error actualizando configuración:', error);
+    console.error(' Error actualizando configuración:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error actualizando configuración',
@@ -435,7 +435,7 @@ exports.getAllUsersForManagement = async (req, res) => {
     
     const users = await User.find(query).select('-contrasena').sort({ created_at: -1 });
     
-    console.log(`✅ ${users.length} usuarios encontrados`);
+    console.log(` ${users.length} usuarios encontrados`);
     
     res.json({
       success: true,
@@ -443,7 +443,7 @@ exports.getAllUsersForManagement = async (req, res) => {
       total: users.length
     });
   } catch (error) {
-    console.error('❌ Error obteniendo usuarios:', error);
+    console.error(' Error obteniendo usuarios:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al obtener usuarios',
@@ -483,7 +483,7 @@ exports.editUser = async (req, res) => {
     
     await user.save();
     
-    console.log(`✅ Usuario actualizado: ${user.nombre_completo}`);
+    console.log(` Usuario actualizado: ${user.nombre_completo}`);
     
     res.json({
       success: true,
@@ -498,7 +498,7 @@ exports.editUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error editando usuario:', error);
+    console.error(' Error editando usuario:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al editar usuario',
@@ -526,14 +526,14 @@ exports.deleteUserPermanently = async (req, res) => {
     await Movement.deleteMany({ user_id: userId });
     await User.findByIdAndDelete(userId);
     
-    console.log(`✅ Usuario ${userName} eliminado permanentemente`);
+    console.log(` Usuario ${userName} eliminado permanentemente`);
     
     res.json({
       success: true,
       mensaje: `Usuario ${userName} eliminado correctamente`,
     });
   } catch (error) {
-    console.error('❌ Error eliminando usuario:', error);
+    console.error(' Error eliminando usuario:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al eliminar usuario',
@@ -565,7 +565,7 @@ exports.createUser = async (req, res) => {
 
     await newUser.save();
     
-    console.log(`✅ Usuario creado: ${newUser.nombre_completo}`);
+    console.log(` Usuario creado: ${newUser.nombre_completo}`);
     
     res.status(201).json({ 
       success: true,
@@ -580,7 +580,7 @@ exports.createUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error creando usuario:', error);
+    console.error(' Error creando usuario:', error);
     res.status(500).json({ 
       success: false,
       mensaje: 'Error en el servidor',
@@ -620,14 +620,14 @@ exports.changeUserPassword = async (req, res) => {
     user.contrasena = newPassword;
     await user.save();
     
-    console.log(`✅ Contraseña actualizada para usuario: ${user.nombre_completo}`);
+    console.log(` Contraseña actualizada para usuario: ${user.nombre_completo}`);
     
     res.json({
       success: true,
       mensaje: `Contraseña actualizada para ${user.nombre_completo}`,
     });
   } catch (error) {
-    console.error('❌ Error cambiando contraseña:', error);
+    console.error(' Error cambiando contraseña:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al cambiar la contraseña',
@@ -702,7 +702,7 @@ exports.exportAllData = async (req, res) => {
     
     await transporter.sendMail(mailOptions);
     
-    console.log('✅ Exportación enviada por correo exitosamente');
+    console.log(' Exportación enviada por correo exitosamente');
     
     res.json({
       success: true,
@@ -714,7 +714,7 @@ exports.exportAllData = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error exportando datos:', error);
+    console.error(' Error exportando datos:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al exportar datos',
@@ -732,7 +732,7 @@ exports.resetSystem = async (req, res) => {
       mensaje: 'Sistema reiniciado correctamente. Por favor reinicia la aplicación.'
     });
   } catch (error) {
-    console.error('❌ Error reiniciando sistema:', error);
+    console.error(' Error reiniciando sistema:', error);
     res.status(500).json({
       success: false,
       mensaje: 'Error al reiniciar el sistema',

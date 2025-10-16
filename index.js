@@ -63,7 +63,7 @@ app.get('/api/v1/system/health', (req, res) => {
   });
 });
 
-// ✅ NUEVO: Ruta para verificar conexión DB
+// Ruta para verificar conexión DB
 app.get('/api/v1/system/db-status', async (req, res) => {
   try {
     const mongoose = require('mongoose');
@@ -92,13 +92,13 @@ app.get('/api/v1/system/db-status', async (req, res) => {
   }
 });
 
-// ✅ Función principal de inicio del servidor
+// Función principal de inicio del servidor
 const startServer = async () => {
   try {
-    // ✅ Conectar a la base de datos
+    // Conectar a la base de datos
     await connectDB();
 
-    // ✅ Inicializar usuario admin
+    // Inicializar usuario admin
     await initAdmin();
 
     async function initAdmin() {
@@ -112,7 +112,7 @@ const startServer = async () => {
     if (!admin) {
       console.log('🔐 Creando usuario administrador...');
       
-      // ✅ NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
+      // NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
       admin = new User({
         nombre_completo: 'Administrador SupervitecApp',
         correo_electronico: adminEmail,
@@ -125,41 +125,41 @@ const startServer = async () => {
       });
       
       await admin.save(); // ← Solo aquí se hashea una vez
-      console.log(`✅ Admin creado: ${admin.correo_electronico}`);
+      console.log(`Admin creado: ${admin.correo_electronico}`);
       console.log(`🔑 Contraseña: ${adminPass}`);
       
     } else {
       console.log(`ℹ️ Admin existente: ${admin.correo_electronico}`);
       
-      // ✅ SOLO ACTUALIZAR SI NO TIENE HASH VÁLIDO O SI ESTÁ EN TEXTO PLANO
+      // SOLO ACTUALIZAR SI NO TIENE HASH VÁLIDO O SI ESTÁ EN TEXTO PLANO
       if (!admin.contrasena || admin.contrasena.length < 50) {
         console.log('🔄 Actualizando contraseña admin...');
         
-        // ✅ NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
+        // NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
         admin.contrasena = adminPass; // ← SIN HASH MANUAL
         await admin.save(); // ← Solo aquí se hashea
-        console.log('✅ Contraseña admin actualizada');
+        console.log('Contraseña admin actualizada');
       }
       
       if (!admin.activo) {
         admin.activo = true;
         await admin.save();
-        console.log('✅ Admin reactivado');
+        console.log('Admin reactivado');
       }
     }
 
     return admin;
   } catch (error) {
-    console.error('❌ Error inicializando admin:', error);
+    console.error(' Error inicializando admin:', error);
     throw error;
   }
 }
 
 
-    // ✅ Iniciar tareas programadas
+    // Iniciar tareas programadas
     iniciarTareasProgramadas();
 
-    // ✅ Middleware de manejo de errores (debe ir al final)
+    // Middleware de manejo de errores (debe ir al final)
     app.use(manejoErrores);
     
     // Manejo de rutas no encontradas
@@ -185,10 +185,10 @@ const startServer = async () => {
     });
 
     
-    // ✅ Iniciar servidor
+    // Iniciar servidor
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('🚀 ================================');
-      console.log(`✅ Backend SupervitecApp corriendo`);
+      console.log(`Backend SupervitecApp corriendo`);
       console.log(`🌐 Puerto: ${PORT}`);
       console.log(`📊 Dashboard: http://192.168.1.6:${PORT}/api/dashboard/stats`);
       console.log(`🏥 Health: http://192.168.1.6:${PORT}/api/v1/system/health`);
@@ -196,31 +196,31 @@ const startServer = async () => {
       console.log('🚀 ================================');
     });
 
-    // ✅ Manejo graceful de cierre del servidor
+    // Manejo graceful de cierre del servidor
     process.on('SIGTERM', () => {
       console.log('📴 SIGTERM recibido. Cerrando servidor...');
       server.close(() => {
-        console.log('✅ Proceso terminado');
+        console.log('Proceso terminado');
         process.exit(0);
       });
     });
 
   } catch (error) {
-    console.error('❌ Error al iniciar servidor:', error);
+    console.error(' Error al iniciar servidor:', error);
     process.exit(1);
   }
 };
 
-// ✅ Manejo de errores no capturados
+// Manejo de errores no capturados
 process.on('unhandledRejection', (err) => {
-  console.error('❌ Promesa no manejada:', err);
+  console.error(' Promesa no manejada:', err);
   process.exit(1);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('❌ Excepción no capturada:', err);
+  console.error(' Excepción no capturada:', err);
   process.exit(1);
 });
 
-// ✅ Iniciar el servidor
+// Iniciar el servidor
 startServer();

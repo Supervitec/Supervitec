@@ -4,8 +4,11 @@ const mongoose = require('mongoose');
 // Registrar nuevo movimiento al finalizar trayecto
 exports.registerMovement = async (req, res) => {
   try {
+    console.log('🟢 registerMovement ejecutado');
+    console.log('📥 req.body:', req.body);
+    console.log('👤 req.user:', req.user);
     const {
-      user_id,               // ✅ RECIBIR user_id del body (de backgroundLocationService)
+      user_id,              
       start_location,
       end_location,
       distancia_recorrida,
@@ -35,11 +38,11 @@ exports.registerMovement = async (req, res) => {
       ruta_seguida_length: ruta_seguida?.length || 0,
     });
 
-    // ✅ OBTENER USER_ID (puede venir del body o del token)
+    //  OBTENER USER_ID 
     const userId = user_id || req.user?.id;
     
     if (!userId) {
-      console.error('❌ user_id no proporcionado');
+      console.error(' user_id no proporcionado');
       return res.status(400).json({ 
         success: false,
         mensaje: 'user_id es requerido' 
@@ -57,7 +60,7 @@ exports.registerMovement = async (req, res) => {
       !fecha ||
       !region
     ) {
-      console.error('❌ Datos incompletos recibidos');
+      console.error(' Datos incompletos recibidos');
       return res.status(400).json({ 
         success: false,
         mensaje: 'Datos de movimiento incompletos.',
@@ -74,9 +77,9 @@ exports.registerMovement = async (req, res) => {
       });
     }
 
-    // ✅ VALIDAR QUE LOS VALORES NO SEAN NEGATIVOS
+    //  VALIDAR QUE LOS VALORES NO SEAN NEGATIVOS
     if (distancia_recorrida < 0) {
-      console.error('❌ distancia_recorrida es negativa:', distancia_recorrida);
+      console.error(' distancia_recorrida es negativa:', distancia_recorrida);
       return res.status(400).json({
         success: false,
         mensaje: 'distancia_recorrida no puede ser negativa'
@@ -84,7 +87,7 @@ exports.registerMovement = async (req, res) => {
     }
 
     if (velocidad_maxima < 0) {
-      console.error('❌ velocidad_maxima es negativa:', velocidad_maxima);
+      console.error(' velocidad_maxima es negativa:', velocidad_maxima);
       return res.status(400).json({
         success: false,
         mensaje: 'velocidad_maxima no puede ser negativa'
@@ -92,29 +95,28 @@ exports.registerMovement = async (req, res) => {
     }
 
     if (tiempo_total < 0) {
-      console.error('❌ tiempo_total es negativo:', tiempo_total);
+      console.error(' tiempo_total es negativo:', tiempo_total);
       return res.status(400).json({
         success: false,
         mensaje: 'tiempo_total no puede ser negativo'
       });
     }
 
-    // ✅ ADVERTENCIA SI LOS VALORES SON 0 (pero permitir guardar)
+    //  ADVERTENCIA SI LOS VALORES SON 0 (pero permitir guardar)
     if (distancia_recorrida === 0) {
       console.warn('⚠️ distancia_recorrida es 0 - se guardará de todos modos');
     }
 
-    // ✅ Validar región (debe ser uno de los 3 permitidos)
+    //  Validar región (debe ser uno de los 3 permitidos)
     const regionesValidas = ['Caldas', 'Risaralda', 'Quindío'];
     if (!regionesValidas.includes(region)) {
-      console.error('❌ Región inválida:', region);
+      console.error(' Región inválida:', region);
       return res.status(400).json({
         success: false,
         mensaje: `Región inválida. Debe ser: ${regionesValidas.join(', ')}`
       });
     }
 
-    // ✅ LOG DETALLADO ANTES DE CREAR
     console.log('💾 Creando movimiento con valores:');
     console.log('  - user_id:', userId);
     console.log('  - distancia_recorrida:', distancia_recorrida, 'metros (', (distancia_recorrida / 1000).toFixed(2), 'km)');
@@ -127,12 +129,12 @@ exports.registerMovement = async (req, res) => {
     console.log('  - estado:', estado || 'completado');
     console.log('  - ruta_seguida:', ruta_seguida?.length || 0, 'puntos');
 
-    // ✅ CONVERTIR A OBJECTID SI ES NECESARIO
+    //  CONVERTIR A OBJECTID SI ES NECESARIO
     let userObjectId;
     if (mongoose.Types.ObjectId.isValid(userId)) {
       userObjectId = new mongoose.Types.ObjectId(userId);
     } else {
-      console.error('❌ user_id no es un ObjectId válido:', userId);
+      console.error(' user_id no es un ObjectId válido:', userId);
       return res.status(400).json({
         success: false,
         mensaje: 'user_id no es válido'
@@ -141,7 +143,7 @@ exports.registerMovement = async (req, res) => {
 
     // Crear movimiento con todos los campos
     const movement = new Movement({
-      user_id: userObjectId, // ✅ ObjectId convertido
+      user_id: userObjectId, //  ObjectId convertido
       start_location: {
         latitude: start_location.latitude,
         longitude: start_location.longitude,
@@ -152,7 +154,7 @@ exports.registerMovement = async (req, res) => {
         longitude: end_location.longitude,
         timestamp: end_location.timestamp || new Date(),
       },
-      distancia_recorrida: Number(distancia_recorrida), // ✅ Asegurar que sea número
+      distancia_recorrida: Number(distancia_recorrida), //  Asegurar que sea número
       velocidad_promedio: Number(velocidad_promedio),
       velocidad_maxima: Number(velocidad_maxima),
       tiempo_total: Number(tiempo_total),
@@ -160,17 +162,17 @@ exports.registerMovement = async (req, res) => {
       fecha_fin: fecha_fin ? new Date(fecha_fin) : (end_location?.timestamp ? new Date(end_location.timestamp) : new Date()),
       region,
       
-      // ✅ CAMPOS REQUERIDOS POR EL MODELO
+      //  CAMPOS REQUERIDOS POR EL MODELO
       tipo_movimiento: tipo_movimiento || 'recorrido_seguridad',
       transporte_utilizado: transporte_utilizado || 'carro',
       estado: estado || 'completado',
       
-      // ✅ CAMPOS OPCIONALES
+      //  CAMPOS OPCIONALES
       ruta_seguida: ruta_seguida || [],
       observaciones: observaciones || '',
     });
 
-    // ✅ LOG ANTES DE GUARDAR
+    //  LOG ANTES DE GUARDAR
     console.log('🔍 Movimiento antes de save():', {
       user_id: movement.user_id,
       distancia_recorrida: movement.distancia_recorrida,
@@ -183,18 +185,18 @@ exports.registerMovement = async (req, res) => {
 
     await movement.save();
 
-    // ✅ LOG DESPUÉS DE GUARDAR
-    console.log('✅ Movimiento guardado en DB:', {
+    //  LOG DESPUÉS DE GUARDAR
+    console.log(' Movimiento guardado en DB:', {
       id: movement._id,
       distancia: movement.distancia_recorrida,
       velocidad_max: movement.velocidad_maxima,
       tiempo: movement.tiempo_total,
     });
 
-    // ✅ Poblar usuario para devolver nombre completo
+    //  Poblar usuario para devolver nombre completo
     await movement.populate('user_id', 'nombre_completo correo_electronico region');
 
-    console.log(`✅ Movimiento registrado exitosamente:`, {
+    console.log(` Movimiento registrado exitosamente:`, {
       id: movement._id,
       usuario: movement.user_id?.nombre_completo,
       distancia: movement.distancia_recorrida,
@@ -209,10 +211,13 @@ exports.registerMovement = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error al registrar movimiento:', error);
+    console.error(' Error al registrar movimiento:', error);
     console.error('📋 Stack trace:', error.stack);
+    console.error('❌❌❌ ERROR CAPTURADO EN CONTROLLER ❌❌❌');
+    console.error('Mensaje:', error.message);
+    console.error('Nombre:', error.name);
     
-    // ✅ MEJOR MANEJO DE ERRORES
+    //  MEJOR MANEJO DE ERRORES
     if (error.name === 'ValidationError') {
       const errores = Object.keys(error.errors).map(key => ({
         campo: key,
@@ -229,7 +234,8 @@ exports.registerMovement = async (req, res) => {
     res.status(500).json({ 
       success: false,
       mensaje: 'Error en el servidor', 
-      error: error.message 
+      error: error.message,
+      detalles: error.stack
     });
   }
 };
@@ -242,7 +248,7 @@ exports.getMovementsByDate = async (req, res) => {
     const nextDay = new Date(fechaStr);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    // ✅ CONVERTIR A OBJECTID
+    //  CONVERTIR A OBJECTID
     const userId = new mongoose.Types.ObjectId(req.user.id);
 
     console.log(`📅 Obteniendo movimientos del día: ${fechaStr} para usuario: ${userId}`);
@@ -250,9 +256,9 @@ exports.getMovementsByDate = async (req, res) => {
     const movimientos = await Movement.aggregate([
       { 
         $match: { 
-          user_id: userId, // ✅ ObjectId
+          user_id: userId, //  ObjectId
           fecha: { $gte: fecha, $lt: nextDay },
-          activo: true // ✅ Solo movimientos activos
+          activo: true //  Solo movimientos activos
         } 
       },
       { 
@@ -275,7 +281,7 @@ exports.getMovementsByDate = async (req, res) => {
       movimientos: [] 
     };
 
-    console.log(`✅ ${resultado.totalRecorridos} movimientos encontrados para ${fechaStr}`);
+    console.log(` ${resultado.totalRecorridos} movimientos encontrados para ${fechaStr}`);
 
     res.json({
       success: true,
@@ -283,7 +289,7 @@ exports.getMovementsByDate = async (req, res) => {
       ...resultado
     });
   } catch (error) {
-    console.error('❌ Error al obtener movimientos por fecha:', error);
+    console.error(' Error al obtener movimientos por fecha:', error);
     res.status(500).json({ 
       success: false,
       mensaje: 'Error en el servidor', 
@@ -300,7 +306,7 @@ exports.getMovementsByMonth = async (req, res) => {
     const firstDay = new Date(year, month, 1);
     const nextMonth = new Date(year, month + 1, 1);
 
-    // ✅ CONVERTIR A OBJECTID
+    //  CONVERTIR A OBJECTID
     const userId = new mongoose.Types.ObjectId(req.user.id);
 
     console.log(`📆 Obteniendo movimientos del mes ${month + 1}/${year} para usuario: ${userId}`);
@@ -308,7 +314,7 @@ exports.getMovementsByMonth = async (req, res) => {
     const movimientos = await Movement.aggregate([
       { 
         $match: {
-          user_id: userId, // ✅ ObjectId
+          user_id: userId, //  ObjectId
           fecha: { $gte: firstDay, $lt: nextMonth },
           activo: true
         }
@@ -333,7 +339,7 @@ exports.getMovementsByMonth = async (req, res) => {
       locations: []
     };
 
-    console.log(`✅ ${resultado.totalRecorridos} movimientos encontrados para ${month + 1}/${year}`);
+    console.log(` ${resultado.totalRecorridos} movimientos encontrados para ${month + 1}/${year}`);
 
     res.json({
       success: true,
@@ -342,7 +348,7 @@ exports.getMovementsByMonth = async (req, res) => {
       ...resultado
     });
   } catch (error) {
-    console.error('❌ Error al obtener movimientos por mes:', error);
+    console.error(' Error al obtener movimientos por mes:', error);
     res.status(500).json({ 
       success: false,
       mensaje: 'Error en el servidor', 
@@ -351,7 +357,7 @@ exports.getMovementsByMonth = async (req, res) => {
   }
 };
 
-// ✅ NUEVO: Obtener todos los movimientos del usuario (para historial completo)
+// Obtener todos los movimientos del usuario 
 exports.getAllMovements = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
@@ -359,7 +365,7 @@ exports.getAllMovements = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    console.log(`📋 Obteniendo movimientos del usuario: ${userId} (página ${page})`);
+    console.log(` Obteniendo movimientos del usuario: ${userId} (página ${page})`);
 
     const [movimientos, total] = await Promise.all([
       Movement.find({ user_id: userId, activo: true })
@@ -370,7 +376,7 @@ exports.getAllMovements = async (req, res) => {
       Movement.countDocuments({ user_id: userId, activo: true })
     ]);
 
-    console.log(`✅ ${movimientos.length} movimientos encontrados (total: ${total})`);
+    console.log(` ${movimientos.length} movimientos encontrados (total: ${total})`);
 
     res.json({
       success: true,
@@ -383,7 +389,7 @@ exports.getAllMovements = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error al obtener movimientos:', error);
+    console.error(' Error al obtener movimientos:', error);
     res.status(500).json({ 
       success: false,
       mensaje: 'Error en el servidor', 

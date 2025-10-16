@@ -12,14 +12,14 @@ router.get('/stats', authMiddleware, async (req, res) => {
   try {
     console.log('📊 Dashboard stats requested by usuario:', req.usuario?.id);
 
-    // ✅ Obtener fecha actual y rangos
+    //  Obtener fecha actual y rangos
     const hoy = new Date();
     const inicioHoy = new Date(hoy.setHours(0, 0, 0, 0));
     const finHoy = new Date(hoy.setHours(23, 59, 59, 999));
     const inicioSemana = new Date();
     inicioSemana.setDate(inicioSemana.getDate() - 7);
 
-    // ✅ Consultas paralelas para mejor rendimiento
+    //  Consultas paralelas para mejor rendimiento
     const [
       totalMovimientos,
       movimientosHoy,
@@ -66,7 +66,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       ])
     ]);
 
-    // ✅ Calcular métricas adicionales
+    //  Calcular métricas adicionales
     const promedioMovimientosPorDia = movimientosSemana > 0 
       ? (movimientosSemana / 7).toFixed(1) 
       : 0;
@@ -100,7 +100,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       ultimaActualizacion: new Date().toISOString()
     };
 
-    console.log('✅ Dashboard stats generated:', stats);
+    console.log(' Dashboard stats generated:', stats);
 
     res.json({
       success: true,
@@ -108,7 +108,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error getting dashboard stats:', error);
+    console.error(' Error getting dashboard stats:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -127,14 +127,14 @@ router.get('/recent-activity', authMiddleware, async (req, res) => {
     
     const limit = parseInt(req.query.limit) || 10;
 
-    // ✅ CORRECCIÓN: usar 'user_id' en lugar de 'usuarioId'
+    //  CORRECCIÓN: usar 'user_id' en lugar de 'usuarioId'
     const recentMovements = await Movement.find({ activo: true })
       .populate('user_id', 'nombre_completo rol region')
       .sort({ fecha: -1 })
       .limit(limit)
       .lean();
 
-    // ✅ Mapear a formato esperado por frontend
+    //  Mapear a formato esperado por frontend
     const activities = recentMovements.map((movement) => {
       let type = 'movement_completed';
       let description = '';
@@ -171,7 +171,7 @@ router.get('/recent-activity', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error getting recent activity:', error);
+    console.error(' Error getting recent activity:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -253,7 +253,7 @@ router.get('/metrics', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error getting metrics:', error);
+    console.error(' Error getting metrics:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -300,7 +300,7 @@ router.get('/charts', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error getting charts data:', error);
+    console.error(' Error getting charts data:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'

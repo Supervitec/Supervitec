@@ -48,7 +48,7 @@ const authMiddleware = (req, res, next) => {
     next();
     
   } catch (error) {
-    console.error('❌ Auth middleware error:', error.message);
+    console.error(' Auth middleware error:', error.message);
     
     // Manejo específico de errores JWT
     if (error.name === 'JsonWebTokenError') {
@@ -134,7 +134,7 @@ const verifyUserExists = async (req, res, next) => {
     next();
 
   } catch (error) {
-    console.error('❌ Error verificando usuarios existentes:', error);
+    console.error(' Error verificando usuarios existentes:', error);
     return res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -142,7 +142,7 @@ const verifyUserExists = async (req, res, next) => {
   }
 };
 
-// ✅ Middleware combinado para admin
+//  Middleware combinado para admin
 const requireAdmin = [
   authMiddleware,
   requireRole(['admin'])

@@ -5,7 +5,7 @@ const auth = require('../middlewares/auth');
 const Movement = require('../models/Movement');
 const User = require('../models/User');
 
-// ✅ Middleware para validar ObjectId
+//  Middleware para validar ObjectId
 function validateObjectId(req, res, next) {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ 
@@ -16,18 +16,40 @@ function validateObjectId(req, res, next) {
   next();
 }
 
-// ✅ POST /api/v1/movements - Registrar nuevo movimiento
+//  POST /api/v1/movements - Registrar nuevo movimiento
 router.post('/', auth, async (req, res) => {
   try {
-    console.log('📍 Registrando nuevo movimiento para usuario:', req.user.id);
+    console.log('📍 POST /movements - Request recibido');
+    console.log('👤 Usuario autenticado:', req.user?.id);
+    console.log('📦 Body completo:', JSON.stringify(req.body, null, 2));
     
     const {
+      user_id,                // ✅ AGREGAR
       tipo_movimiento,
       start_location,
+      end_location,           // ✅ AGREGAR
+      distancia_recorrida,    // ✅ AGREGAR
+      velocidad_promedio,     // ✅ AGREGAR
+      velocidad_maxima,       // ✅ AGREGAR
+      tiempo_total,           // ✅ AGREGAR
+      fecha,                  // ✅ AGREGAR
+      fecha_fin,              // ✅ AGREGAR
       observaciones,
       region,
-      transporte_utilizado
+      transporte_utilizado,
+      ruta_seguida,           // ✅ AGREGAR
+      estado,                 // ✅ AGREGAR
     } = req.body;
+
+    // ✅ DETERMINAR user_id (puede venir del body o del token)
+    const userId = user_id || req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'user_id es requerido'
+      });
+    }
 
     // Validar datos requeridos
     if (!start_location || !start_location.latitude || !start_location.longitude) {
@@ -37,8 +59,27 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // ✅ VALIDAR end_location SI SE PROPORCIONA
+    if (end_location && (!end_location.latitude || !end_location.longitude)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ubicación de fin incompleta (falta latitude o longitude)'
+      });
+    }
+
+    // ✅ VALIDAR REGIÓN
+    const regionesValidas = ['Caldas', 'Risaralda', 'Quindío'];
+    const regionFinal = region || 'Caldas';
+    
+    if (!regionesValidas.includes(regionFinal)) {
+      return res.status(400).json({
+        success: false,
+        message: `Región inválida. Debe ser: ${regionesValidas.join(', ')}`
+      });
+    }
+
     // Obtener datos del usuario para defaults
-    const usuario = await User.findById(req.user.id);
+    const usuario = await User.findById(userId);
     if (!usuario) {
       return res.status(404).json({
         success: false,
@@ -46,27 +87,68 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Crear movimiento
+    // ✅ LOG ANTES DE CREAR
+    console.log('💾 Creando movimiento con:');
+    console.log('  - user_id:', userId);
+    console.log('  - distancia_recorrida:', distancia_recorrida, 'metros');
+    console.log('  - velocidad_maxima:', velocidad_maxima, 'km/h');
+    console.log('  - velocidad_promedio:', velocidad_promedio, 'km/h');
+    console.log('  - tiempo_total:', tiempo_total, 'minutos');
+    console.log('  - region:', regionFinal);
+    console.log('  - ruta_seguida:', ruta_seguida?.length || 0, 'puntos');
+
+    // ✅ CREAR MOVIMIENTO CON TODOS LOS CAMPOS
     const nuevoMovimiento = new Movement({
-      user_id: req.user.id,
-      tipo_movimiento: tipo_movimiento || 'recorrido_seguridad',
+      user_id: userId,
+      
+      // Ubicaciones
       start_location: {
         latitude: start_location.latitude,
         longitude: start_location.longitude,
-        timestamp: new Date(),
+        timestamp: start_location.timestamp || fecha || new Date(),
         direccion: start_location.direccion
       },
-      region: region || usuario.region,
-      transporte_utilizado: transporte_utilizado || usuario.transporte,
-      fecha: new Date(),
-      observaciones,
-      estado: 'iniciado'
+      end_location: end_location ? {
+        latitude: end_location.latitude,
+        longitude: end_location.longitude,
+        timestamp: end_location.timestamp || fecha_fin || new Date(),
+        direccion: end_location.direccion
+      } : undefined,
+      
+      // ✅ DATOS NUMÉRICOS (ASEGURAR QUE SEAN NÚMEROS)
+      distancia_recorrida: Number(distancia_recorrida) || 0,
+      velocidad_promedio: Number(velocidad_promedio) || 0,
+      velocidad_maxima: Number(velocidad_maxima) || 0,
+      tiempo_total: Number(tiempo_total) || 0,
+      
+      // Fechas
+      fecha: fecha ? new Date(fecha) : new Date(),
+      fecha_fin: fecha_fin ? new Date(fecha_fin) : (end_location?.timestamp ? new Date(end_location.timestamp) : undefined),
+      
+      // Región y tipo
+      region: regionFinal,
+      tipo_movimiento: tipo_movimiento || 'recorrido_seguridad',
+      transporte_utilizado: transporte_utilizado || usuario.transporte || 'carro',
+      estado: estado || (end_location ? 'completado' : 'iniciado'),
+      
+      // ✅ RUTA SEGUIDA (opcional)
+      ruta_seguida: ruta_seguida || [],
+      
+      // Observaciones
+      observaciones: observaciones || '',
     });
 
     const movimientoGuardado = await nuevoMovimiento.save();
     await movimientoGuardado.populate('user_id', 'nombre_completo correo_electronico');
 
-    console.log('✅ Movimiento registrado:', movimientoGuardado._id);
+    // ✅ LOG DESPUÉS DE GUARDAR
+    console.log('✅ Movimiento guardado exitosamente:', {
+      id: movimientoGuardado._id,
+      distancia: movimientoGuardado.distancia_recorrida,
+      velocidad_max: movimientoGuardado.velocidad_maxima,
+      tiempo: movimientoGuardado.tiempo_total,
+      region: movimientoGuardado.region,
+    });
 
     res.status(201).json({
       success: true,
@@ -76,6 +158,8 @@ router.post('/', auth, async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error registrando movimiento:', error);
+    console.error('📋 Stack:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -84,7 +168,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// ✅ GET /api/v1/movements/daily/:date - Movimientos por día (manteniendo tu ruta original)
+//  GET /api/v1/movements/daily/:date - Movimientos por día 
 router.get('/daily/:date', auth, async (req, res) => {
   try {
     const { date } = req.params;
@@ -124,7 +208,7 @@ router.get('/daily/:date', auth, async (req, res) => {
       .populate('user_id', 'nombre_completo correo_electronico region')
       .sort({ fecha: -1 });
 
-    console.log(`✅ ${movimientos.length} movimientos encontrados para ${date}`);
+    console.log(` ${movimientos.length} movimientos encontrados para ${date}`);
 
     res.json({
       success: true,
@@ -134,7 +218,7 @@ router.get('/daily/:date', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo movimientos diarios:', error);
+    console.error(' Error obteniendo movimientos diarios:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -143,7 +227,7 @@ router.get('/daily/:date', auth, async (req, res) => {
   }
 });
 
-// ✅ GET /api/v1/movements/monthly/:month/:year - Movimientos por mes (manteniendo tu ruta)
+//  GET /api/v1/movements/monthly/:month/:year - Movimientos por mes (manteniendo tu ruta)
 router.get('/monthly/:month/:year', auth, async (req, res) => {
   try {
     const { month, year } = req.params;
@@ -181,7 +265,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
       .populate('user_id', 'nombre_completo correo_electronico region')
       .sort({ fecha: -1 });
 
-    // ✅ AGREGADO: Estadísticas del mes
+    //  AGREGADO: Estadísticas del mes
     const estadisticas = {
       total_movimientos: movimientos.length,
       distancia_total: movimientos.reduce((acc, mov) => acc + (mov.distancia_recorrida || 0), 0),
@@ -190,7 +274,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
       incidentes_reportados: movimientos.reduce((acc, mov) => acc + (mov.incidentes?.length || 0), 0)
     };
 
-    console.log(`✅ ${movimientos.length} movimientos encontrados para ${month}/${year}`);
+    console.log(` ${movimientos.length} movimientos encontrados para ${month}/${year}`);
 
     res.json({
       success: true,
@@ -201,7 +285,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo movimientos mensuales:', error);
+    console.error(' Error obteniendo movimientos mensuales:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -210,7 +294,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
   }
 });
 
-// ✅ AGREGADO: GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
+//  AGREGADO: GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
 router.get('/', auth, async (req, res) => {
   try {
     console.log('📋 Obteniendo movimientos - Usuario:', req.user.rol);
@@ -249,7 +333,7 @@ router.get('/', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo movimientos:', error);
+    console.error(' Error obteniendo movimientos:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -258,7 +342,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// ✅ AGREGADO: PATCH /api/v1/movements/:id - Actualizar movimiento
+//  AGREGADO: PATCH /api/v1/movements/:id - Actualizar movimiento
 router.patch('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -314,7 +398,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
     const movimientoActualizado = await movimiento.save();
     await movimientoActualizado.populate('user_id', 'nombre_completo correo_electronico');
 
-    console.log('✅ Movimiento actualizado:', movimientoActualizado.estado);
+    console.log(' Movimiento actualizado:', movimientoActualizado.estado);
 
     res.json({
       success: true,
@@ -323,7 +407,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error actualizando movimiento:', error);
+    console.error(' Error actualizando movimiento:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -332,7 +416,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
   }
 });
 
-// ✅ AGREGADO: DELETE /api/v1/movements/:id - Eliminar movimiento
+//  AGREGADO: DELETE /api/v1/movements/:id - Eliminar movimiento
 router.delete('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -365,7 +449,7 @@ router.delete('/:id', auth, validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error eliminando movimiento:', error);
+    console.error(' Error eliminando movimiento:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'

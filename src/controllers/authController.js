@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const JWT_SECRET = process.env.JWT_SECRET || '5up3r_v1t3c';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || '5up3r_v1t3c';
 
-// ✅ REGISTER - MANTENER IGUAL (YA FUNCIONA)
+//  REGISTER 
 exports.register = async (req, res) => {
   try {
     const { nombre_completo, correo_electronico, contrasena, region, transporte } = req.body;
@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // ✅ CREAR USUARIO SIN HASH MANUAL 
+    //  CREAR USUARIO SIN HASH MANUAL 
     const newUser = new User({
       nombre_completo,
       correo_electronico: correo_electronico.toLowerCase(),
@@ -52,7 +52,7 @@ exports.register = async (req, res) => {
 
     await newUser.save(); // Aquí se ejecuta el middleware pre-save
 
-    // ✅ GENERAR AMBOS TOKENS
+    //  GENERAR AMBOS TOKENS
     const token = jwt.sign(
       { id: newUser._id, correo_electronico: newUser.correo_electronico, rol: newUser.rol },
       JWT_SECRET,
@@ -65,9 +65,9 @@ exports.register = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    console.log('✅ Usuario registrado:', correo_electronico);
+    console.log(' Usuario registrado:', correo_electronico);
     
-    // ✅ RESPUESTA CORREGIDA CON REFRESH TOKEN
+    //  RESPUESTA CORREGIDA CON REFRESH TOKEN
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
@@ -84,7 +84,7 @@ exports.register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error en registro:', error);
+    console.error(' Error en registro:', error);
     
     // Manejo de errores específicos
     if (error.code === 11000) {
@@ -109,7 +109,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// ✅ LOGIN - VERSIÓN CORREGIDA CON DEBUG COMPLETO
+//  LOGIN - VERSIÓN CORREGIDA CON DEBUG COMPLETO
 exports.login = async (req, res) => {
   try {
     const { correo_electronico, contrasena } = req.body;
@@ -123,7 +123,7 @@ exports.login = async (req, res) => {
 
     // Validaciones manuales básicas
     if (!correo_electronico || !contrasena) {
-      console.log('❌ Faltan credenciales');
+      console.log(' Faltan credenciales');
       return res.status(400).json({
         success: false,
         message: 'Email y contraseña son requeridos'
@@ -137,7 +137,7 @@ exports.login = async (req, res) => {
     }).select('+contrasena');
     
     if (!user) {
-      console.log('❌ Usuario no encontrado:', correo_electronico);
+      console.log(' Usuario no encontrado:', correo_electronico);
       return res.status(401).json({
         success: false,
         message: 'Credenciales inválidas'
@@ -155,20 +155,20 @@ exports.login = async (req, res) => {
 
     // Verificar cuenta activa
     if (!user.activo) {
-      console.log('❌ Cuenta desactivada');
+      console.log(' Cuenta desactivada');
       return res.status(401).json({
         success: false,
         message: 'Cuenta desactivada'
       });
     }
 
-    // ✅ COMPARAR CONTRASEÑA - MÉTODO CORREGIDO
+    //  COMPARAR CONTRASEÑA - MÉTODO CORREGIDO
     console.log('🔍 ====== COMPARANDO CONTRASEÑAS ======');
     console.log('🔍 Contraseña texto plano:', contrasena);
     console.log('🔍 Hash en BD:', user.contrasena);
     
     try {
-      // ✅ USAR MÉTODO DEL MODELO (consistente con registro)
+      //  USAR MÉTODO DEL MODELO (consistente con registro)
       console.log('🔍 Usando método comparePassword del modelo...');
       const methodResult = await user.comparePassword(contrasena);
       console.log('🔍 Resultado método modelo:', methodResult);
@@ -181,13 +181,13 @@ exports.login = async (req, res) => {
       // Mostrar si son iguales
       console.log('🔍 Métodos coinciden:', methodResult === directResult);
 
-      // ✅ USAR EL MÉTODO DEL MODELO (CORRECTO)
+      //  USAR EL MÉTODO DEL MODELO (CORRECTO)
       const isValidPassword = methodResult;
       console.log('🔍 Resultado final usado:', isValidPassword);
 
       if (!isValidPassword) {
-        console.log('❌ Contraseña incorrecta para:', correo_electronico);
-        console.log('❌ Comparación falló - credenciales inválidas');
+        console.log(' Contraseña incorrecta para:', correo_electronico);
+        console.log(' Comparación falló - credenciales inválidas');
         return res.status(401).json({
           success: false,
           message: 'Credenciales inválidas'
@@ -195,16 +195,16 @@ exports.login = async (req, res) => {
       }
 
     } catch (compareError) {
-      console.error('❌ Error en comparación de contraseña:', compareError);
+      console.error(' Error en comparación de contraseña:', compareError);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor'
       });
     }
 
-    console.log('✅ ====== CONTRASEÑA VÁLIDA ======');
+    console.log(' ====== CONTRASEÑA VÁLIDA ======');
 
-    // ✅ GENERAR AMBOS TOKENS
+    //  GENERAR AMBOS TOKENS
     console.log('🔍 Generando tokens...');
     const token = jwt.sign(
       { 
@@ -234,12 +234,12 @@ exports.login = async (req, res) => {
     user.ultimo_acceso = new Date();
     await user.save();
 
-    console.log('✅ ====== LOGIN EXITOSO ======');
-    console.log('✅ Login exitoso para:', correo_electronico);
-    console.log('✅ Usuario ID:', user._id);
-    console.log('✅ Rol:', user.rol);
+    console.log(' ====== LOGIN EXITOSO ======');
+    console.log(' Login exitoso para:', correo_electronico);
+    console.log(' Usuario ID:', user._id);
+    console.log(' Rol:', user.rol);
 
-    // ✅ RESPUESTA CORREGIDA CON REFRESH TOKEN
+    //  RESPUESTA CORREGIDA CON REFRESH TOKEN
     res.status(200).json({
       success: true,
       message: 'Login exitoso',
@@ -256,9 +256,9 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ ====== ERROR EN LOGIN ======');
-    console.error('❌ Error completo:', error);
-    console.error('❌ Stack trace:', error.stack);
+    console.error(' ====== ERROR EN LOGIN ======');
+    console.error(' Error completo:', error);
+    console.error(' Stack trace:', error.stack);
     
     res.status(500).json({
       success: false,
@@ -267,7 +267,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// ✅ REFRESH TOKEN - MEJORADO
+//  REFRESH TOKEN - MEJORADO
 exports.refresh = async (req, res) => {
   try {
     const { refresh_token } = req.body;
@@ -296,7 +296,7 @@ exports.refresh = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error en refresh token:', error);
+    console.error(' Error en refresh token:', error);
     res.status(401).json({ 
       success: false,
       message: 'Refresh token inválido' 
@@ -304,7 +304,7 @@ exports.refresh = async (req, res) => {
   }
 };
 
-// ✅ SOLICITAR RECUPERACIÓN - MANTENER IGUAL
+//  SOLICITAR RECUPERACIÓN - MANTENER IGUAL
 exports.solicitarRecuperacion = async (req, res) => {
   try {
     const { correo_electronico } = req.body;
@@ -348,7 +348,7 @@ exports.solicitarRecuperacion = async (req, res) => {
   }
 };
 
-// ✅ CAMBIAR CONTRASEÑA - CORREGIDO PARA CONSISTENCIA
+//  CAMBIAR CONTRASEÑA - CORREGIDO PARA CONSISTENCIA
 exports.changePasswordLogged = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -364,11 +364,11 @@ exports.changePasswordLogged = async (req, res) => {
       });
     }
 
-    // ✅ USAR MÉTODO DEL MODELO (consistente)
+    //  USAR MÉTODO DEL MODELO (consistente)
     const isOldPasswordValid = await user.comparePassword(oldPassword);
     
     if (!isOldPasswordValid) {
-      console.log('❌ Contraseña actual incorrecta');
+      console.log(' Contraseña actual incorrecta');
       return res.status(401).json({ 
         success: false,
         message: 'Contraseña actual incorrecta' 
@@ -379,14 +379,14 @@ exports.changePasswordLogged = async (req, res) => {
     user.contrasena = newPassword;  
     await user.save();
     
-    console.log('✅ Contraseña cambiada exitosamente');
+    console.log(' Contraseña cambiada exitosamente');
     res.json({ 
       success: true,
       message: 'Contraseña cambiada correctamente' 
     });
     
   } catch (error) {
-    console.error('❌ Error en cambio de contraseña:', error);
+    console.error(' Error en cambio de contraseña:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error en el servidor' 

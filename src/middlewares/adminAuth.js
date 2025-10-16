@@ -9,7 +9,7 @@ function adminAuth(req, res, next) {
   console.log('🔍 Authorization header:', authHeader);
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('❌ No bearer token');
+    console.log(' No bearer token');
     return res.status(401).json({ mensaje: 'Falta token de autorización' });
   }
 
@@ -25,24 +25,23 @@ function adminAuth(req, res, next) {
     console.log('🔍 decoded.role:', decoded.role); // ← VERIFICA AMBOS
     console.log('🔍 Token completo decoded:', JSON.stringify(decoded, null, 2));
     
-    // ✅ VERIFICA AMBOS: 'rol' Y 'role'
     const userRole = decoded.rol || decoded.role;
     console.log('🔍 userRole final:', userRole);
     
     if (!userRole || userRole !== 'admin') {
-      console.log('❌ Rol inválido:', userRole);
+      console.log(' Rol inválido:', userRole);
       return res.status(403).json({ 
         mensaje: 'Acceso prohibido',
         rolRecibido: userRole  
       });
     }
 
-    console.log('✅ Admin verificado correctamente');
+    console.log(' Admin verificado correctamente');
     req.admin = decoded;
     next();
     
   } catch (e) {
-    console.error('❌ Error verificando token:', e.message);
+    console.error(' Error verificando token:', e.message);
     return res.status(401).json({ mensaje: 'Token inválido o expirado' });
   }
 }

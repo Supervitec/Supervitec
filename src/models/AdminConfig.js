@@ -54,7 +54,7 @@ adminConfigSchema.statics.getOrCreateConfig = async function(adminId) {
   
   if (!config) {
     config = await this.create({ admin_id: adminId });
-    console.log('✅ Configuración creada para admin:', adminId);
+    console.log(' Configuración creada para admin:', adminId);
   }
   
   return config;

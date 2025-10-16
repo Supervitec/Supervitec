@@ -13,7 +13,7 @@ const auth = require('../middlewares/auth');
 
 
 
-// ✅ Configuración Ethereal Email 
+//  Configuración Ethereal Email 
 const transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
   port: 587,
@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ ENDPOINTS USANDO CONTROLADORES (mantener como están)
+//  ENDPOINTS USANDO CONTROLADORES (mantener como están)
 router.post('/register', register);
 router.post('/login', login);
 
@@ -47,7 +47,7 @@ router.post(
 
 router.put('/change-password-logged', auth, changePasswordLogged);
 
-// ✅ NUEVO SISTEMA DE RESET PASSWORD (SIN TOKEN DE AUTENTICACIÓN)
+//  NUEVO SISTEMA DE RESET PASSWORD (SIN TOKEN DE AUTENTICACIÓN)
 
 // POST /api/v1/auth/request-password-reset - Solicitar reset de contraseña
 router.post('/request-password-reset', async (req, res) => {
@@ -68,7 +68,7 @@ router.post('/request-password-reset', async (req, res) => {
     
     if (!user) {
       // Por seguridad, no revelar si el email existe o no
-      console.log('❌ Email no encontrado:', correo_electronico);
+      console.log(' Email no encontrado:', correo_electronico);
       return res.status(200).json({
         success: true,
         message: 'Si el correo existe en nuestro sistema, se enviará un enlace de recuperación'
@@ -83,7 +83,7 @@ router.post('/request-password-reset', async (req, res) => {
     user.expiraTokenRecuperacion = new Date(Date.now() + 3600000); // 1 hora
     
     await user.save();
-    console.log('✅ Token generado para usuario:', user.nombre_completo);
+    console.log(' Token generado para usuario:', user.nombre_completo);
 
     // Crear URL de recuperación
     const resetUrl = `https://back-end-fjnh.onrender.com/api/v1/auth/reset-password?token=${resetToken}`;
@@ -120,17 +120,17 @@ router.post('/request-password-reset', async (req, res) => {
 
     // Enviar email
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email enviado. Preview URL:', nodemailer.getTestMessageUrl(info));
+    console.log(' Email enviado. Preview URL:', nodemailer.getTestMessageUrl(info));
 
     res.json({
       success: true,
       message: 'Si el correo existe en nuestro sistema, se enviará un enlace de recuperación',
-      // ✅ Para testing con Ethereal - mostrar preview URL
+      //  Para testing con Ethereal - mostrar preview URL
       previewUrl: nodemailer.getTestMessageUrl(info)
     });
 
   } catch (error) {
-    console.error('❌ Error en request-password-reset:', error);
+    console.error(' Error en request-password-reset:', error);
     
     if (error.code === 'EAUTH' || error.code === 'ESOCKET') {
       return res.status(500).json({
@@ -175,14 +175,14 @@ router.post('/reset-password', async (req, res) => {
     });
 
     if (!user) {
-      console.log('❌ Token inválido o expirado:', token?.substring(0, 8));
+      console.log(' Token inválido o expirado:', token?.substring(0, 8));
       return res.status(400).json({
         success: false,
         message: 'El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.'
       });
     }
 
-    console.log('✅ Token válido para usuario:', user.nombre_completo);
+    console.log(' Token válido para usuario:', user.nombre_completo);
 
     // Actualizar contraseña (el middleware pre-save se encarga del hash)
     user.contrasena = nuevaContrasena;
@@ -195,7 +195,7 @@ router.post('/reset-password', async (req, res) => {
     user.ultimo_acceso = new Date();
 
     await user.save();
-    console.log('✅ Contraseña actualizada para:', user.correo_electronico);
+    console.log(' Contraseña actualizada para:', user.correo_electronico);
 
     res.json({
       success: true,
@@ -203,7 +203,7 @@ router.post('/reset-password', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error en reset-password:', error);
+    console.error(' Error en reset-password:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -211,7 +211,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// ✅ MANTENER: GET para testing con formulario HTML
+//  MANTENER: GET para testing con formulario HTML
 router.get('/reset-password', async (req, res) => {
   try {
     const { token } = req.query;

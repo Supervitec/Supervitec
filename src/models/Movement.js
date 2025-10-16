@@ -34,7 +34,7 @@ const movementSchema = new mongoose.Schema({
     longitude: { type: Number },
     timestamp: { type: Date, default: Date.now }
   }],
-  // ✅ REMOVER default: 0 O HACERLO CONDICIONAL
+
   distancia_recorrida: { 
     type: Number, 
     required: true,

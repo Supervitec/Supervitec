@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const authMiddleware = require('../middlewares/auth');
 const User = require('../models/User'); 
 
-// ✅ Middleware para validar ObjectId
+//  Middleware para validar ObjectId
 function validateObjectId(req, res, next) {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ 
@@ -20,7 +20,7 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('👥 Obteniendo todos los usuarios solicitados por:', req.user?.id);
 
-    // ✅ Verificar que el usuario es admin
+    //  Verificar que el usuario es admin
     if (req.user.rol !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -28,10 +28,10 @@ router.get('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // ✅ Obtener todos los usuarios (excluir contraseñas)
+    //  Obtener todos los usuarios (excluir contraseñas)
     const users = await User.find({}, '-contrasena');
 
-    console.log(`✅ Found ${users.length} users`);
+    console.log(` Found ${users.length} users`);
 
     res.json({
       success: true,
@@ -39,7 +39,7 @@ router.get('/', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo usuarios:', error);
+    console.error(' Error obteniendo usuarios:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -48,13 +48,13 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ GET /api/v1/users/:id/stats - Obtener estadísticas de un usuario
+//  GET /api/v1/users/:id/stats - Obtener estadísticas de un usuario
 router.get('/:id/stats', validateObjectId, async (req, res) => {
   try {
     const adminController = require('../controllers/adminController');
     await adminController.getUserStats(req, res);
   } catch (error) {
-    console.error('❌ Error en ruta stats:', error);
+    console.error(' Error en ruta stats:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -62,13 +62,13 @@ router.get('/:id/stats', validateObjectId, async (req, res) => {
   }
 });
 
-// ✅ GET /api/v1/users/:id/movements - Obtener movimientos de un usuario
+//  GET /api/v1/users/:id/movements - Obtener movimientos de un usuario
 router.get('/:id/movements', validateObjectId, async (req, res) => {
   try {
     const adminController = require('../controllers/adminController');
     await adminController.getUserMovements(req, res);
   } catch (error) {
-    console.error('❌ Error en ruta movements:', error);
+    console.error(' Error en ruta movements:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -76,7 +76,7 @@ router.get('/:id/movements', validateObjectId, async (req, res) => {
   }
 });
 
-// ✅ GET /api/v1/users/:id - Obtener usuario específico por ID
+//  GET /api/v1/users/:id - Obtener usuario específico por ID
 router.get('/:id', validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -92,9 +92,9 @@ router.get('/:id', validateObjectId, async (req, res) => {
       });
     }
 
-    console.log('✅ Usuario encontrado:', user.nombre_completo);
+    console.log(' Usuario encontrado:', user.nombre_completo);
 
-    // ✅ Actualizar último acceso
+    //  Actualizar último acceso
     await User.findByIdAndUpdate(id, { ultimo_acceso: new Date() });
 
     // Responder con los datos del usuario
@@ -104,7 +104,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo usuario:', error);
+    console.error(' Error obteniendo usuario:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor',
@@ -113,7 +113,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
   }
 });
 
-// ✅ PATCH /api/v1/users/:id/toggle-status - Cambiar estado activo/inactivo
+//  PATCH /api/v1/users/:id/toggle-status - Cambiar estado activo/inactivo
 router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -123,7 +123,7 @@ router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
     const user = await User.findById(id);
     
     if (!user) {
-      console.log('❌ Usuario no encontrado con ID:', id);
+      console.log(' Usuario no encontrado con ID:', id);
       return res.status(404).json({ 
         success: false, 
         message: 'Usuario no encontrado' 
@@ -143,7 +143,7 @@ router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
       { new: true, select: '-contrasena' } // Devolver documento actualizado sin contraseña
     );
 
-    console.log(`✅ Usuario ${updatedUser.nombre_completo} ${newStatus ? 'ACTIVADO' : 'DESACTIVADO'}`);
+    console.log(` Usuario ${updatedUser.nombre_completo} ${newStatus ? 'ACTIVADO' : 'DESACTIVADO'}`);
 
     res.json({
       success: true,
@@ -158,7 +158,7 @@ router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error cambiando estado de usuario:', error);
+    console.error(' Error cambiando estado de usuario:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor',
@@ -180,7 +180,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const bcrypt = require('bcryptjs');
     const { nombre_completo, correo_electronico, contrasena, region, transporte, rol } = req.body;
 
-    // ✅ Verificar que el usuario no existe
+    //  Verificar que el usuario no existe
     const existingUser = await User.findOne({ correo_electronico });
     if (existingUser) {
       return res.status(400).json({
@@ -189,7 +189,7 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // ✅ Crear nuevo usuario
+    //  Crear nuevo usuario
     const newUser = new User({
       nombre_completo,
       correo_electronico,
@@ -197,14 +197,14 @@ router.post('/', authMiddleware, async (req, res) => {
       region,
       transporte,
       rol: rol || 'ingeniero',
-      activo: true // ✅ Por defecto activo
+      activo: true //  Por defecto activo
     });
 
     await newUser.save();
 
-    console.log('✅ Nuevo usuario creado:', correo_electronico);
+    console.log(' Nuevo usuario creado:', correo_electronico);
 
-    // ✅ Devolver usuario sin contraseña
+    //  Devolver usuario sin contraseña
     const userResponse = newUser.toObject();
     delete userResponse.contrasena;
 
@@ -215,7 +215,7 @@ router.post('/', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error creando al usuario:', error);
+    console.error(' Error creando al usuario:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -263,7 +263,7 @@ router.put('/:id', authMiddleware, validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error actualizando al usuario:', error);
+    console.error(' Error actualizando al usuario:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -271,13 +271,13 @@ router.put('/:id', authMiddleware, validateObjectId, async (req, res) => {
   }
 });
 
-// ✅ DELETE /api/v1/users/:id - FUNCIÓN CORREGIDA CON SEGURIDAD MEJORADA
+//  DELETE /api/v1/users/:id - FUNCIÓN CORREGIDA CON SEGURIDAD MEJORADA
 router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🗑️ Eliminando usuario con ID:', id);
 
-    // ✅ Verificar que es admin
+    //  Verificar que es admin
     if (req.user.rol !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -285,7 +285,7 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
       });
     }
 
-    // ✅ NUEVO: Buscar el usuario antes de eliminar
+    //  NUEVO: Buscar el usuario antes de eliminar
     const user = await User.findById(id);
     
     if (!user) {
@@ -295,7 +295,7 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
       });
     }
 
-    // ✅ NUEVO: Verificar que no se está eliminando a sí mismo
+    //  NUEVO: Verificar que no se está eliminando a sí mismo
     if (user._id.toString() === req.user.id) {
       return res.status(400).json({
         success: false,
@@ -303,7 +303,7 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
       });
     }
 
-    // ✅ NUEVO: Verificar que no es el último admin
+    //  NUEVO: Verificar que no es el último admin
     if (user.rol === 'admin') {
       const adminCount = await User.countDocuments({ rol: 'admin' });
       if (adminCount <= 1) {
@@ -314,10 +314,10 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
       }
     }
 
-    // ✅ Proceder con la eliminación
+    //  Proceder con la eliminación
     const deletedUser = await User.findByIdAndDelete(id);
 
-    console.log('✅ Usuario eliminado:', deletedUser.nombre_completo);
+    console.log(' Usuario eliminado:', deletedUser.nombre_completo);
 
     res.json({
       success: true,
@@ -330,7 +330,7 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error eliminando al usuario:', error);
+    console.error(' Error eliminando al usuario:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
