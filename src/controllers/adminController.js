@@ -264,17 +264,27 @@ exports.exportMovements = async (req, res) => {
   try {
     const { month, year, region } = req.params;
 
+    console.log(`📤 Exportando movimientos: ${month}/${year}${region ? ` - ${region}` : ''}`);
+
     const match = {
       fecha: {
         $gte: new Date(parseInt(year), parseInt(month) - 1, 1),
         $lt: new Date(parseInt(year), parseInt(month), 1),
-      }
+      },
+      activo: true // ✅ AGREGAR para no exportar eliminados
     };
     if (region) match.region = region;
 
     const data = await Movement.find(match)
       .populate('user_id', 'nombre_completo correo_electronico region transporte rol')
       .lean();
+
+    console.log(`📊 ${data.length} movimientos encontrados`);
+
+    // ✅ LOG PARA VERIFICAR tiempo_total
+    if (data.length > 0) {
+      console.log('🔍 Primer movimiento tiempo_total:', data[0].tiempo_total);
+    }
 
     const records = data.map(mov => ({
       Usuario: mov.user_id?.nombre_completo || 'N/A',
@@ -283,11 +293,13 @@ exports.exportMovements = async (req, res) => {
       Transporte: mov.user_id?.transporte || 'N/A',
       Rol: mov.user_id?.rol || 'N/A',
       Fecha: mov.fecha ? mov.fecha.toISOString().substring(0, 10) : 'N/A',
-      Distancia_km: mov.distancia_recorrida || 0,
-      Velocidad_promedio_kmh: mov.velocidad_promedio || 0,
-      Velocidad_maxima_kmh: mov.velocidad_maxima || 0,
-      Tiempo_minutos: mov.tiempo_total || 0
+      'Distancia (km)': ((mov.distancia_recorrida || 0) / 1000).toFixed(2), // ✅ Convertir a km
+      'Velocidad Promedio (km/h)': (mov.velocidad_promedio || 0).toFixed(1),
+      'Velocidad Máxima (km/h)': (mov.velocidad_maxima || 0).toFixed(1),
+      'Tiempo (minutos)': mov.tiempo_total || 0 // ✅ Ya está en minutos
     }));
+
+    console.log('✅ Primer registro formateado:', records[0]);
 
     const ws = XLSX.utils.json_to_sheet(records);
     const wb = XLSX.utils.book_new();
@@ -295,11 +307,14 @@ exports.exportMovements = async (req, res) => {
 
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-    res.setHeader('Content-Disposition', 'attachment; filename=movimientos.xlsx');
+    res.setHeader('Content-Disposition', `attachment; filename=supervitec_${month}_${year}.xlsx`);
     res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    
+    console.log('✅ Archivo Excel enviado');
+    
     res.send(buf);
   } catch (err) {
-    console.error('Error exportando movimientos:', err);
+    console.error('❌ Error exportando movimientos:', err);
     res.status(500).json({ mensaje: 'Error al exportar', error: err.message });
   }
 };
