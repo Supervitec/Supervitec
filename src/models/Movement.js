@@ -6,14 +6,12 @@ const movementSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  // Tipo de movimiento
   tipo_movimiento: {
     type: String,
     enum: ['recorrido_seguridad', 'inspeccion_rutinaria', 'emergencia', 'mantenimiento'],
     required: true,
     default: 'recorrido_seguridad'
   },
-  // Estado del movimiento
   estado: {
     type: String,
     enum: ['iniciado', 'en_progreso', 'pausado', 'completado', 'cancelado'],
@@ -23,7 +21,6 @@ const movementSchema = new mongoose.Schema({
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     timestamp: { type: Date, required: true },
-    // Dirección legible
     direccion: { type: String }
   },
   end_location: {
@@ -32,36 +29,52 @@ const movementSchema = new mongoose.Schema({
     timestamp: { type: Date },
     direccion: { type: String }
   },
-  // Ruta seguida para tracking completo
   ruta_seguida: [{
     latitude: { type: Number },
     longitude: { type: Number },
     timestamp: { type: Date, default: Date.now }
   }],
-  distancia_recorrida: { type: Number, default: 0 },     // km
-  velocidad_promedio: { type: Number, default: 0 },      // km/h
-  velocidad_maxima: { type: Number, default: 0 },        // km/h
-  tiempo_total: { type: Number, default: 0 },            // minutos
+  // ✅ REMOVER default: 0 O HACERLO CONDICIONAL
+  distancia_recorrida: { 
+    type: Number, 
+    required: true,
+    min: 0
+    // NO default: 0 
+  },
+  velocidad_promedio: { 
+    type: Number, 
+    required: true,
+    min: 0
+    // NO default: 0
+  },
+  velocidad_maxima: { 
+    type: Number, 
+    required: true,
+    min: 0
+    // NO default: 0
+  },
+  tiempo_total: { 
+    type: Number, 
+    required: true,
+    min: 0
+    // NO default: 0
+  },
   fecha: { type: Date, required: true, default: Date.now },
-  // Fecha de finalización
   fecha_fin: { type: Date },
   region: { 
     type: String, 
     enum: ['Caldas', 'Risaralda', 'Quindío'], 
     required: true 
   },
-  // Transporte utilizado
   transporte_utilizado: {
     type: String,
     enum: ['moto', 'carro'],
     required: true
   },
-  // Observaciones para reportes SST
   observaciones: {
     type: String,
     maxlength: 500
   },
-  // Incidentes reportados durante el recorrido
   incidentes: [{
     tipo: {
       type: String,
@@ -79,7 +92,6 @@ const movementSchema = new mongoose.Schema({
       default: 'media'
     }
   }],
-  // Soft delete
   activo: {
     type: Boolean,
     default: true
