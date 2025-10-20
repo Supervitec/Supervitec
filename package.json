@@ -10,16 +10,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Celis05/SupervitecF.git"
+    "url": "git+https://github.com/Supervitec/Supervitec.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Celis05/SupervitecF/issues"
+    "url": "https://github.com/Supervitec/Supervitec/issues"
   },
-  "homepage": "https://github.com/Celis05/SupervitecF#readme",
+  "homepage": "https://github.com/Supervitec/Supervitec#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
