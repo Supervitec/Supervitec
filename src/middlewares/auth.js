@@ -3,13 +3,10 @@ const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || '5up3r_v1t3c';
 
-// Middleware principal de autenticación
 const authMiddleware = (req, res, next) => {
   try {
-    // Obtener el header de autorización
     const authHeader = req.headers.authorization;
     
-    // Verificar que existe y tiene formato correcto
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
@@ -18,7 +15,6 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    // Extraer el token 
     const token = authHeader.substring(7);
     
     if (!token || token.length === 0) {
@@ -29,10 +25,8 @@ const authMiddleware = (req, res, next) => {
       });
     }
     
-    // Verificar y decodificar el token
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Verificar que el token no esté expirado manualmente
     if (decoded.exp && decoded.exp < Date.now() / 1000) {
       return res.status(401).json({
         success: false,
@@ -41,16 +35,12 @@ const authMiddleware = (req, res, next) => {
       });
     }
     
-    
     req.user = decoded;
-    
-    
     next();
     
   } catch (error) {
-    console.error(' Auth middleware error:', error.message);
+    console.error('Auth middleware error:', error.message);
     
-    // Manejo específico de errores JWT
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
@@ -67,7 +57,6 @@ const authMiddleware = (req, res, next) => {
       });
     }
     
-    // Error genérico
     return res.status(401).json({
       success: false,
       message: 'Error de autenticación',
@@ -79,7 +68,6 @@ const authMiddleware = (req, res, next) => {
 // Middleware para verificar roles específicos
 const requireRole = (roles) => {
   return (req, res, next) => {
-    // Este middleware debe usarse DESPUÉS de authMiddleware
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -129,12 +117,11 @@ const verifyUserExists = async (req, res, next) => {
       });
     }
 
-    // Agregar datos actualizados del usuario
     req.currentUser = user;
     next();
 
   } catch (error) {
-    console.error(' Error verificando usuarios existentes:', error);
+    console.error('Error verificando usuarios existentes:', error);
     return res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -142,22 +129,16 @@ const verifyUserExists = async (req, res, next) => {
   }
 };
 
-//  Middleware combinado para admin
+// Middleware combinado para admin
 const requireAdmin = [
   authMiddleware,
   requireRole(['admin'])
 ];
 
-//  Exportar todos los middlewares
+// ✅ EXPORTACIÓN CORRECTA (UNA SOLA VEZ)
 module.exports = {
   authMiddleware,
   requireRole,
   verifyUserExists,
   requireAdmin
 };
-
-// Exportación por defecto
-module.exports = authMiddleware;
-module.exports.requireRole = requireRole;
-module.exports.verifyUserExists = verifyUserExists;
-module.exports.requireAdmin = requireAdmin;

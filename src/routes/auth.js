@@ -8,23 +8,10 @@ const nodemailer = require('nodemailer');
 const { body } = require('express-validator');
 const validarCampos = require('../middlewares/validarCampos'); 
 const { register, login, solicitarRecuperacion, changePasswordLogged } = require('../controllers/authController');
-const auth = require('../middlewares/auth');
+const { authMiddleware } = require('../middlewares/auth');
 
 
-
-
-//  Configuración Ethereal Email 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.ethereal.email',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-//  ENDPOINTS USANDO CONTROLADORES (mantener como están)
+//  ENDPOINTS USANDO CONTROLADORES 
 router.post('/register', register);
 router.post('/login', login);
 
@@ -45,9 +32,7 @@ router.post(
   changePasswordLogged
 );
 
-router.put('/change-password-logged', auth, changePasswordLogged);
-
-//  NUEVO SISTEMA DE RESET PASSWORD (SIN TOKEN DE AUTENTICACIÓN)
+router.put('/change-password-logged', authMiddleware, changePasswordLogged);
 
 // POST /api/v1/auth/request-password-reset - Solicitar reset de contraseña
 router.post('/request-password-reset', async (req, res) => {

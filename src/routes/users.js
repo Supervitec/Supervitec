@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose'); 
-const authMiddleware = require('../middlewares/auth'); 
+const { authMiddleware } = require('../middlewares/auth'); 
 const bcrypt = require('bcryptjs');
 const User = require('../models/User'); 
 const multer = require('multer');

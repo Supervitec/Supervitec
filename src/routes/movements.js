@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const auth = require('../middlewares/auth');
+const { authMiddleware } = require('../middlewares/auth');
 const Movement = require('../models/Movement');
 const User = require('../models/User');
 
@@ -17,7 +17,7 @@ function validateObjectId(req, res, next) {
 }
 
 //  POST /api/v1/movements - Registrar nuevo movimiento
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     console.log('📍 POST /movements - Request recibido');
     console.log('👤 Usuario autenticado:', req.user?.id);
@@ -169,7 +169,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 //  GET /api/v1/movements/daily/:date - Movimientos por día 
-router.get('/daily/:date', auth, async (req, res) => {
+router.get('/daily/:date', authMiddleware, async (req, res) => {
   try {
     const { date } = req.params;
     console.log('📅 Obteniendo movimientos del día:', date);
@@ -228,7 +228,7 @@ router.get('/daily/:date', auth, async (req, res) => {
 });
 
 //  GET /api/v1/movements/monthly/:month/:year - Movimientos por mes (manteniendo tu ruta)
-router.get('/monthly/:month/:year', auth, async (req, res) => {
+router.get('/monthly/:month/:year', authMiddleware, async (req, res) => {
   try {
     const { month, year } = req.params;
     console.log(`📅 Obteniendo movimientos de ${month}/${year}`);
@@ -295,7 +295,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
 });
 
 //  AGREGADO: GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('📋 Obteniendo movimientos - Usuario:', req.user.rol);
 
@@ -343,7 +343,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 //  AGREGADO: PATCH /api/v1/movements/:id - Actualizar movimiento
-router.patch('/:id', auth, validateObjectId, async (req, res) => {
+router.patch('/:id', authMiddleware, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🔄 Actualizando movimiento:', id);
@@ -417,7 +417,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
 });
 
 //  AGREGADO: DELETE /api/v1/movements/:id - Eliminar movimiento
-router.delete('/:id', auth, validateObjectId, async (req, res) => {
+router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🗑️ Eliminando movimiento:', id);
