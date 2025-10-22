@@ -41,7 +41,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
 
 app.use((req, res, next) => {
-  console.log(`📡 ${req.method} ${req.path} - ${req.ip} - ${new Date().toISOString()}`);
+  (`📡 ${req.method} ${req.path} - ${req.ip} - ${new Date().toISOString()}`);
   next();
 });
 
@@ -110,13 +110,12 @@ const startServer = async () => {
     let admin = await User.findOne({ correo_electronico: adminEmail });
 
     if (!admin) {
-      console.log('🔐 Creando usuario administrador...');
+      ('🔐 Creando usuario administrador...');
       
-      // NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
       admin = new User({
         nombre_completo: 'Administrador SupervitecApp',
         correo_electronico: adminEmail,
-        contrasena: adminPass, // ← SIN HASH MANUAL - EL MODELO LO HARÁ
+        contrasena: adminPass, 
         region: 'Caldas',
         transporte: 'carro',
         rol: 'admin',
@@ -124,27 +123,26 @@ const startServer = async () => {
         fechaCreacion: new Date()
       });
       
-      await admin.save(); // ← Solo aquí se hashea una vez
-      console.log(`Admin creado: ${admin.correo_electronico}`);
-      console.log(`🔑 Contraseña: ${adminPass}`);
+      await admin.save(); 
+      (`Admin creado: ${admin.correo_electronico}`);
+      (`🔑 Contraseña: ${adminPass}`);
       
     } else {
-      console.log(`ℹ️ Admin existente: ${admin.correo_electronico}`);
+      (`ℹ️ Admin existente: ${admin.correo_electronico}`);
       
-      // SOLO ACTUALIZAR SI NO TIENE HASH VÁLIDO O SI ESTÁ EN TEXTO PLANO
       if (!admin.contrasena || admin.contrasena.length < 50) {
-        console.log('🔄 Actualizando contraseña admin...');
+        ('🔄 Actualizando contraseña admin...');
         
-        // NO HASHEAR MANUALMENTE - DEJAR QUE EL MODELO LO HAGA
-        admin.contrasena = adminPass; // ← SIN HASH MANUAL
-        await admin.save(); // ← Solo aquí se hashea
-        console.log('Contraseña admin actualizada');
+      
+        admin.contrasena = adminPass; 
+        await admin.save(); 
+        ('Contraseña admin actualizada');
       }
       
       if (!admin.activo) {
         admin.activo = true;
         await admin.save();
-        console.log('Admin reactivado');
+        ('Admin reactivado');
       }
     }
 
@@ -187,20 +185,20 @@ const startServer = async () => {
     
     // Iniciar servidor
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log('🚀 ================================');
-      console.log(`Backend SupervitecApp corriendo`);
-      console.log(`🌐 Puerto: ${PORT}`);
-      console.log(`📊 Dashboard: http://192.168.1.6:${PORT}/api/dashboard/stats`);
-      console.log(`🏥 Health: http://192.168.1.6:${PORT}/api/v1/system/health`);
-      console.log(`📂 DB Status: http://192.168.1.6:${PORT}/api/v1/system/db-status`);
-      console.log('🚀 ================================');
+      ('🚀 ================================');
+      (`Backend SupervitecApp corriendo`);
+      (`🌐 Puerto: ${PORT}`);
+      (`📊 Dashboard: http://192.168.1.6:${PORT}/api/dashboard/stats`);
+      (`🏥 Health: http://192.168.1.6:${PORT}/api/v1/system/health`);
+      (`📂 DB Status: http://192.168.1.6:${PORT}/api/v1/system/db-status`);
+      ('🚀 ================================');
     });
 
     // Manejo graceful de cierre del servidor
     process.on('SIGTERM', () => {
-      console.log('📴 SIGTERM recibido. Cerrando servidor...');
+      ('📴 SIGTERM recibido. Cerrando servidor...');
       server.close(() => {
-        console.log('Proceso terminado');
+        ('Proceso terminado');
         process.exit(0);
       });
     });
