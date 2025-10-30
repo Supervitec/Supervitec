@@ -14,6 +14,7 @@ const authRoutes = require('./src/routes/auth');
 const dashboardRoutes = require('./src/routes/dashboard'); 
 const userRoutes = require('./src/routes/users');
 const movementRoutes = require('./src/routes/movements');
+const messageRoutes = require('./src/routes/messages');
 const adminRoutes = require('./src/routes/admin');
 
 const app = express();
@@ -51,6 +52,8 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/movements', movementRoutes);
+app.use('/api/v1/messages', messageRoutes);
+
 
 // Más rutas de utilidad
 app.get('/api/v1/system/health', (req, res) => {
