@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const auth = require('../middlewares/auth');
+const admin = require('../middlewares/adminAuth');
 const Movement = require('../models/Movement');
 const User = require('../models/User');
 
@@ -24,21 +25,21 @@ router.post('/', auth, async (req, res) => {
     console.log('📦 Body completo:', JSON.stringify(req.body, null, 2));
     
     const {
-      user_id,                // ✅ AGREGAR
+      user_id,                
       tipo_movimiento,
       start_location,
-      end_location,           // ✅ AGREGAR
-      distancia_recorrida,    // ✅ AGREGAR
-      velocidad_promedio,     // ✅ AGREGAR
-      velocidad_maxima,       // ✅ AGREGAR
-      tiempo_total,           // ✅ AGREGAR
-      fecha,                  // ✅ AGREGAR
-      fecha_fin,              // ✅ AGREGAR
+      end_location,           
+      distancia_recorrida,    
+      velocidad_promedio,     
+      velocidad_maxima,       
+      tiempo_total,           
+      fecha,                  
+      fecha_fin,              
       observaciones,
       region,
       transporte_utilizado,
-      ruta_seguida,           // ✅ AGREGAR
-      estado,                 // ✅ AGREGAR
+      ruta_seguida,           
+      estado,                 
     } = req.body;
 
     // ✅ DETERMINAR user_id (puede venir del body o del token)
@@ -87,15 +88,6 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // ✅ LOG ANTES DE CREAR
-    console.log('💾 Creando movimiento con:');
-    console.log('  - user_id:', userId);
-    console.log('  - distancia_recorrida:', distancia_recorrida, 'metros');
-    console.log('  - velocidad_maxima:', velocidad_maxima, 'km/h');
-    console.log('  - velocidad_promedio:', velocidad_promedio, 'km/h');
-    console.log('  - tiempo_total:', tiempo_total, 'minutos');
-    console.log('  - region:', regionFinal);
-    console.log('  - ruta_seguida:', ruta_seguida?.length || 0, 'puntos');
 
     // ✅ CREAR MOVIMIENTO CON TODOS LOS CAMPOS
     const nuevoMovimiento = new Movement({
@@ -265,7 +257,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
       .populate('user_id', 'nombre_completo correo_electronico region')
       .sort({ fecha: -1 });
 
-    //  AGREGADO: Estadísticas del mes
+    //   Estadísticas del mes
     const estadisticas = {
       total_movimientos: movimientos.length,
       distancia_total: movimientos.reduce((acc, mov) => acc + (mov.distancia_recorrida || 0), 0),
@@ -294,7 +286,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
   }
 });
 
-//  AGREGADO: GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
+//   GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
 router.get('/', auth, async (req, res) => {
   try {
     console.log('📋 Obteniendo movimientos - Usuario:', req.user.rol);
@@ -342,7 +334,49 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-//  AGREGADO: PATCH /api/v1/movements/:id - Actualizar movimiento
+// ✅ GET /api/v1/movements/user/:userId - Obtener movimientos de un usuario (ADMIN)
+router.get('/user/:userId', auth, admin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('📋 Obteniendo movimientos del usuario:', userId);
+
+    // ✅ VALIDAR que el userId sea un ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de usuario inválido' 
+      });
+    }
+
+    // ✅ BUSCAR con el campo correcto: user_id (no usuario_id)
+    const movimientos = await Movement.find({ 
+      user_id: userId,
+      activo: true 
+    })
+      .populate('user_id', 'nombre_completo correo_electronico region')
+      .sort({ fecha: -1 })  // ✅ fecha (no fecha_inicio)
+      .limit(100);
+
+    console.log(`✅ ${movimientos.length} movimientos encontrados para el usuario ${userId}`);
+
+    res.json({
+      success: true,
+      data: movimientos,  // ✅ Usar 'data' para consistencia
+      total: movimientos.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo movimientos del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener movimientos del usuario',
+      error: error.message
+    });
+  }
+});
+
+//   PATCH /api/v1/movements/:id - Actualizar movimiento
 router.patch('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -416,7 +450,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
   }
 });
 
-//  AGREGADO: DELETE /api/v1/movements/:id - Eliminar movimiento
+//   DELETE /api/v1/movements/:id - Eliminar movimiento
 router.delete('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
