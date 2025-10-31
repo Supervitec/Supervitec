@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const authMiddleware = require('../middlewares/auth');
 const User = require('../models/User'); 
 
+
 //  Middleware para validar ObjectId
 function validateObjectId(req, res, next) {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -14,6 +15,44 @@ function validateObjectId(req, res, next) {
   }
   next();
 }
+
+
+// ✅ GET /api/v1/users/list - Obtener lista de usuarios (con filtro opcional por rol)
+router.get('/list', authMiddleware, async (req, res) => {
+  try {
+    const { rol } = req.query;
+    
+    console.log('📋 Obteniendo lista de usuarios', rol ? `(rol: ${rol})` : '');
+
+    // ✅ Construir query dinámico
+    let query = {};
+    if (rol) {
+      query.rol = rol; // Filtrar por rol si se proporciona
+    }
+
+    // ✅ Obtener usuarios sin contraseña
+    const users = await User.find(query)
+      .select('_id nombre_completo correo_electronico rol activo')
+      .limit(50);
+
+    console.log(`✅ Se encontraron ${users.length} usuario(s)`);
+
+    res.json({
+      success: true,
+      data: users,
+      total: users.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo lista de usuarios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo lista de usuarios',
+      error: error.message
+    });
+  }
+});
+
 
 // GET /api/v1/users - Obtener todos los usuarios 
 router.get('/', authMiddleware, async (req, res) => {
@@ -48,6 +87,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+
 //  GET /api/v1/users/:id/stats - Obtener estadísticas de un usuario
 router.get('/:id/stats', validateObjectId, async (req, res) => {
   try {
@@ -62,6 +102,7 @@ router.get('/:id/stats', validateObjectId, async (req, res) => {
   }
 });
 
+
 //  GET /api/v1/users/:id/movements - Obtener movimientos de un usuario
 router.get('/:id/movements', validateObjectId, async (req, res) => {
   try {
@@ -75,6 +116,7 @@ router.get('/:id/movements', validateObjectId, async (req, res) => {
     });
   }
 });
+
 
 //  GET /api/v1/users/:id - Obtener usuario específico por ID
 router.get('/:id', validateObjectId, async (req, res) => {
@@ -112,6 +154,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
     });
   }
 });
+
 
 //  PATCH /api/v1/users/:id/toggle-status - Cambiar estado activo/inactivo
 router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
@@ -166,6 +209,7 @@ router.patch('/:id/toggle-status', validateObjectId, async (req, res) => {
     });
   }
 });
+
 
 // POST /api/v1/users - Crear nuevo usuario (solo admin)
 router.post('/', authMiddleware, async (req, res) => {
@@ -223,6 +267,7 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+
 // PUT /api/v1/users/:id - Actualizar usuario (solo admin)
 router.put('/:id', authMiddleware, validateObjectId, async (req, res) => {
   try {
@@ -270,6 +315,7 @@ router.put('/:id', authMiddleware, validateObjectId, async (req, res) => {
     });
   }
 });
+
 
 //  DELETE /api/v1/users/:id - FUNCIÓN CORREGIDA CON SEGURIDAD MEJORADA
 router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
@@ -338,5 +384,6 @@ router.delete('/:id', authMiddleware, validateObjectId, async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;
