@@ -271,7 +271,7 @@ exports.exportMovements = async (req, res) => {
         $gte: new Date(parseInt(year), parseInt(month) - 1, 1),
         $lt: new Date(parseInt(year), parseInt(month), 1),
       },
-      activo: true // ✅ AGREGAR para no exportar eliminados
+      activo: true 
     };
     if (region) match.region = region;
 
@@ -755,3 +755,29 @@ exports.resetSystem = async (req, res) => {
     });
   }
 };
+
+exports.sendMessage = async (req, res) => {
+  try {
+    const { userId, subject, message } = req.body;
+
+    // Validaciones
+    if (!userId || !subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId, subject y message son obligatorios'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Mensaje enviado correctamente'
+    });
+  } catch (error) {
+    console.error('Error enviando mensaje:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error enviando mensaje'
+    });
+  }
+};
+

@@ -54,12 +54,15 @@ router.get('/export/:month/:year/:region', adminAuth, adminController.exportMove
 router.get('/config', adminAuth, adminController.getAdminConfig);
 router.put('/config', adminAuth, adminController.updateAdminConfig);
 
+
+
 // ===== GESTIÓN AVANZADA DE USUARIOS =====
 router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
 router.put('/users/edit/:userId', adminAuth, adminController.editUser);
 router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
 router.post('/users/create', adminAuth, adminController.createUser);
 router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
+router.post('/send-message', adminAuth, adminController.sendMessage);
 
 // ===== SISTEMA =====
 router.post('/export-all-data', adminAuth, adminController.exportAllData);
