@@ -94,7 +94,7 @@ exports.getUserStats = async (req, res) => {
     const { id } = req.params;
     console.log('📊 Obteniendo estadísticas del usuario:', id);
 
-    // ✅ CONVERTIR A OBJECTID
+    // ✅ VALIDAR Y CONVERTIR A OBJECTID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -114,7 +114,7 @@ exports.getUserStats = async (req, res) => {
 
     // ✅ BUSCAR CON OBJECTID
     const movements = await Movement.find({
-      user_id: userObjectId, // ✅ Ahora es ObjectId
+      user_id: userObjectId,
       activo: true
     });
 
@@ -176,7 +176,7 @@ exports.getUserMovements = async (req, res) => {
     const { id } = req.params;
     console.log('📍 Obteniendo movimientos del usuario:', id);
 
-    // ✅ CONVERTIR A OBJECTID
+    // ✅ VALIDAR Y CONVERTIR A OBJECTID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -196,7 +196,7 @@ exports.getUserMovements = async (req, res) => {
 
     // ✅ CONSTRUIR QUERY CON OBJECTID
     const query = {
-      user_id: userObjectId, // ✅ Ahora es ObjectId
+      user_id: userObjectId,
       activo: true
     };
 
@@ -302,7 +302,8 @@ exports.exportMovements = async (req, res) => {
       activo: true
     };
 
-    if (region && region !== 'todas') { // ✅ Permitir "todas" como filtro
+    // ✅ PERMITIR "todas" COMO FILTRO
+    if (region && region !== 'todas') {
       match.region = region;
     }
 
@@ -319,11 +320,6 @@ exports.exportMovements = async (req, res) => {
       });
     }
 
-    // ✅ LOG PARA VERIFICAR tiempo_total
-    if (data.length > 0) {
-      console.log('🔍 Primer movimiento tiempo_total:', data[0].tiempo_total);
-    }
-
     const records = data.map(mov => ({
       Usuario: mov.user_id?.nombre_completo || 'N/A',
       Correo: mov.user_id?.correo_electronico || 'N/A',
@@ -336,8 +332,6 @@ exports.exportMovements = async (req, res) => {
       'Velocidad Máxima (km/h)': (mov.velocidad_maxima || 0).toFixed(1),
       'Tiempo (minutos)': mov.tiempo_total || 0
     }));
-
-    console.log('✅ Primer registro formateado:', records[0]);
 
     const ws = XLSX.utils.json_to_sheet(records);
     const wb = XLSX.utils.book_new();
