@@ -240,6 +240,62 @@ exports.registerMovement = async (req, res) => {
   }
 };
 
+exports.createMovement = async (req, res) => {
+  try {
+    const { 
+      ubicacion_inicial, 
+      distancia_recorrida, 
+      velocidad_promedio, 
+      velocidad_maxima, 
+      tiempo_total,
+      ruta,
+      incidentes,
+      transporte_utilizado,
+      region
+    } = req.body;
+
+    console.log('📍 Creando nuevo movimiento para usuario:', req.usuario.id);
+
+    // ✅ SOLUCIÓN: Convertir user_id a ObjectId
+    const mongoose = require('mongoose');
+    const userObjectId = new mongoose.Types.ObjectId(req.usuario.id);
+
+    const newMovement = new Movement({
+      user_id: userObjectId,  
+      ubicacion_inicial,
+      distancia_recorrida: distancia_recorrida || 0,
+      velocidad_promedio: velocidad_promedio || 0,
+      velocidad_maxima: velocidad_maxima || 0,
+      tiempo_total: tiempo_total || 0,
+      ruta: ruta || [],
+      incidentes: incidentes || [],
+      transporte_utilizado: transporte_utilizado || 'carro',
+      region: region || req.usuario.region || 'Risaralda',
+      fecha: new Date(),
+      activo: true,
+      estado: 'completado'
+    });
+
+    await newMovement.save();
+
+    console.log('✅ Movimiento creado exitosamente:', newMovement._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Movimiento creado exitosamente',
+      data: newMovement
+    });
+
+  } catch (error) {
+    console.error('❌ Error creando movimiento:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear el movimiento',
+      error: error.message
+    });
+  }
+};
+
 // Consultar movimientos diarios del usuario
 exports.getMovementsByDate = async (req, res) => {
   try {

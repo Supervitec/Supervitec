@@ -6,7 +6,8 @@ const admin = require('../middlewares/adminAuth');
 const Movement = require('../models/Movement');
 const User = require('../models/User');
 
-//  Middleware para validar ObjectId
+
+// ✅ Middleware para validar ObjectId
 function validateObjectId(req, res, next) {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ 
@@ -17,7 +18,8 @@ function validateObjectId(req, res, next) {
   next();
 }
 
-//  POST /api/v1/movements - Registrar nuevo movimiento
+
+// ✅ POST /api/v1/movements - Registrar nuevo movimiento
 router.post('/', auth, async (req, res) => {
   try {
     console.log('📍 POST /movements - Request recibido');
@@ -52,6 +54,16 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // ✅ CONVERTIR A OBJECTID - SOLUCIÓN AL PROBLEMA PRINCIPAL
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
     // Validar datos requeridos
     if (!start_location || !start_location.latitude || !start_location.longitude) {
       return res.status(400).json({
@@ -80,7 +92,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Obtener datos del usuario para defaults
-    const usuario = await User.findById(userId);
+    const usuario = await User.findById(userObjectId);
     if (!usuario) {
       return res.status(404).json({
         success: false,
@@ -88,10 +100,9 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-
-    // ✅ CREAR MOVIMIENTO CON TODOS LOS CAMPOS
+    // ✅ CREAR MOVIMIENTO CON OBJECTID
     const nuevoMovimiento = new Movement({
-      user_id: userId,
+      user_id: userObjectId,  // ✅ AHORA ES OBJECTID
       
       // Ubicaciones
       start_location: {
@@ -128,6 +139,9 @@ router.post('/', auth, async (req, res) => {
       
       // Observaciones
       observaciones: observaciones || '',
+      
+      // Control
+      activo: true
     });
 
     const movimientoGuardado = await nuevoMovimiento.save();
@@ -136,6 +150,7 @@ router.post('/', auth, async (req, res) => {
     // ✅ LOG DESPUÉS DE GUARDAR
     console.log('✅ Movimiento guardado exitosamente:', {
       id: movimientoGuardado._id,
+      user_id_type: typeof movimientoGuardado.user_id,
       distancia: movimientoGuardado.distancia_recorrida,
       velocidad_max: movimientoGuardado.velocidad_maxima,
       tiempo: movimientoGuardado.tiempo_total,
@@ -160,7 +175,8 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-//  GET /api/v1/movements/daily/:date - Movimientos por día 
+
+// ✅ GET /api/v1/movements/daily/:date - Movimientos por día 
 router.get('/daily/:date', auth, async (req, res) => {
   try {
     const { date } = req.params;
@@ -193,14 +209,15 @@ router.get('/daily/:date', auth, async (req, res) => {
 
     // Si no es admin, solo sus movimientos
     if (req.user.rol !== 'admin') {
-      filtros.user_id = req.user.id;
+      // ✅ CONVERTIR A OBJECTID
+      filtros.user_id = new mongoose.Types.ObjectId(req.user.id);
     }
 
     const movimientos = await Movement.find(filtros)
       .populate('user_id', 'nombre_completo correo_electronico region')
       .sort({ fecha: -1 });
 
-    console.log(` ${movimientos.length} movimientos encontrados para ${date}`);
+    console.log(`✅ ${movimientos.length} movimientos encontrados para ${date}`);
 
     res.json({
       success: true,
@@ -210,7 +227,7 @@ router.get('/daily/:date', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error obteniendo movimientos diarios:', error);
+    console.error('❌ Error obteniendo movimientos diarios:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -219,7 +236,8 @@ router.get('/daily/:date', auth, async (req, res) => {
   }
 });
 
-//  GET /api/v1/movements/monthly/:month/:year - Movimientos por mes (manteniendo tu ruta)
+
+// ✅ GET /api/v1/movements/monthly/:month/:year - Movimientos por mes
 router.get('/monthly/:month/:year', auth, async (req, res) => {
   try {
     const { month, year } = req.params;
@@ -250,14 +268,15 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
 
     // Si no es admin, solo sus movimientos
     if (req.user.rol !== 'admin') {
-      filtros.user_id = req.user.id;
+      // ✅ CONVERTIR A OBJECTID
+      filtros.user_id = new mongoose.Types.ObjectId(req.user.id);
     }
 
     const movimientos = await Movement.find(filtros)
       .populate('user_id', 'nombre_completo correo_electronico region')
       .sort({ fecha: -1 });
 
-    //   Estadísticas del mes
+    // Estadísticas del mes
     const estadisticas = {
       total_movimientos: movimientos.length,
       distancia_total: movimientos.reduce((acc, mov) => acc + (mov.distancia_recorrida || 0), 0),
@@ -266,7 +285,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
       incidentes_reportados: movimientos.reduce((acc, mov) => acc + (mov.incidentes?.length || 0), 0)
     };
 
-    console.log(` ${movimientos.length} movimientos encontrados para ${month}/${year}`);
+    console.log(`✅ ${movimientos.length} movimientos encontrados para ${month}/${year}`);
 
     res.json({
       success: true,
@@ -277,7 +296,7 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error obteniendo movimientos mensuales:', error);
+    console.error('❌ Error obteniendo movimientos mensuales:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -286,7 +305,8 @@ router.get('/monthly/:month/:year', auth, async (req, res) => {
   }
 });
 
-//   GET /api/v1/movements - Obtener todos los movimientos (ADMIN)
+
+// ✅ GET /api/v1/movements - Obtener todos los movimientos (ADMIN/USER)
 router.get('/', auth, async (req, res) => {
   try {
     console.log('📋 Obteniendo movimientos - Usuario:', req.user.rol);
@@ -300,7 +320,8 @@ router.get('/', auth, async (req, res) => {
 
     // Si no es admin, solo sus movimientos
     if (req.user.rol !== 'admin') {
-      filtros.user_id = req.user.id;
+      // ✅ CONVERTIR A OBJECTID
+      filtros.user_id = new mongoose.Types.ObjectId(req.user.id);
     }
 
     // Paginación
@@ -314,6 +335,8 @@ router.get('/', auth, async (req, res) => {
 
     const total = await Movement.countDocuments(filtros);
 
+    console.log(`✅ ${movimientos.length} movimientos obtenidos`);
+
     res.json({
       success: true,
       data: movimientos,
@@ -325,7 +348,7 @@ router.get('/', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error obteniendo movimientos:', error);
+    console.error('❌ Error obteniendo movimientos:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -333,6 +356,7 @@ router.get('/', auth, async (req, res) => {
     });
   }
 });
+
 
 // ✅ GET /api/v1/movements/user/:userId - Obtener movimientos de un usuario (ADMIN)
 router.get('/user/:userId', auth, admin, async (req, res) => {
@@ -349,20 +373,23 @@ router.get('/user/:userId', auth, admin, async (req, res) => {
       });
     }
 
-    // ✅ BUSCAR con el campo correcto: user_id (no usuario_id)
+    // ✅ CONVERTIR A OBJECTID
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // ✅ BUSCAR con el campo correcto: user_id
     const movimientos = await Movement.find({ 
-      user_id: userId,
+      user_id: userObjectId,
       activo: true 
     })
       .populate('user_id', 'nombre_completo correo_electronico region')
-      .sort({ fecha: -1 })  // ✅ fecha (no fecha_inicio)
+      .sort({ fecha: -1 })
       .limit(100);
 
     console.log(`✅ ${movimientos.length} movimientos encontrados para el usuario ${userId}`);
 
     res.json({
       success: true,
-      data: movimientos,  // ✅ Usar 'data' para consistencia
+      data: movimientos,
       total: movimientos.length
     });
 
@@ -376,7 +403,8 @@ router.get('/user/:userId', auth, admin, async (req, res) => {
   }
 });
 
-//   PATCH /api/v1/movements/:id - Actualizar movimiento
+
+// ✅ PATCH /api/v1/movements/:id - Actualizar movimiento
 router.patch('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -413,7 +441,8 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
     // Si se está completando el movimiento
     if (estado === 'completado' && movimiento.estado !== 'completado') {
       movimiento.fecha_fin = new Date();
-      movimiento.calcularDuracion();
+      // Si tienes un método calcularDuracion en tu modelo, descomentar:
+      // movimiento.calcularDuracion();
     }
 
     // Actualizar campos
@@ -422,17 +451,17 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
       ...end_location,
       timestamp: new Date()
     };
-    if (observaciones) movimiento.observaciones = observaciones;
-    if (distancia_recorrida) movimiento.distancia_recorrida = distancia_recorrida;
-    if (velocidad_maxima) movimiento.velocidad_maxima = velocidad_maxima;
-    if (velocidad_promedio) movimiento.velocidad_promedio = velocidad_promedio;
+    if (observaciones !== undefined) movimiento.observaciones = observaciones;
+    if (distancia_recorrida !== undefined) movimiento.distancia_recorrida = distancia_recorrida;
+    if (velocidad_maxima !== undefined) movimiento.velocidad_maxima = velocidad_maxima;
+    if (velocidad_promedio !== undefined) movimiento.velocidad_promedio = velocidad_promedio;
     if (incidentes) movimiento.incidentes = incidentes;
     if (ruta_seguida) movimiento.ruta_seguida = ruta_seguida;
 
     const movimientoActualizado = await movimiento.save();
     await movimientoActualizado.populate('user_id', 'nombre_completo correo_electronico');
 
-    console.log(' Movimiento actualizado:', movimientoActualizado.estado);
+    console.log('✅ Movimiento actualizado:', movimientoActualizado.estado);
 
     res.json({
       success: true,
@@ -441,7 +470,7 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error actualizando movimiento:', error);
+    console.error('❌ Error actualizando movimiento:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -450,7 +479,8 @@ router.patch('/:id', auth, validateObjectId, async (req, res) => {
   }
 });
 
-//   DELETE /api/v1/movements/:id - Eliminar movimiento
+
+// ✅ DELETE /api/v1/movements/:id - Eliminar movimiento (ADMIN)
 router.delete('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const { id } = req.params;
@@ -477,18 +507,21 @@ router.delete('/:id', auth, validateObjectId, async (req, res) => {
     movimiento.activo = false;
     await movimiento.save();
 
+    console.log('✅ Movimiento eliminado (soft delete)');
+
     res.json({
       success: true,
       message: 'Movimiento eliminado correctamente'
     });
 
   } catch (error) {
-    console.error(' Error eliminando movimiento:', error);
+    console.error('❌ Error eliminando movimiento:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
     });
   }
 });
+
 
 module.exports = router;
