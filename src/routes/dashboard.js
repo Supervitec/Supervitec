@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/auth'); 
-const adminMiddleware = require('../middlewares/adminAuth');
 const Movement = require('../models/Movement');
 const User = require('../models/User');
 
@@ -122,37 +121,48 @@ router.get('/stats', authMiddleware, async (req, res) => {
 // GET /api/dashboard/recent-activity
 // Actividad reciente del sistema
 // ========================================
-router.get('/recent-activity', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/recent-activity', authMiddleware, async (req, res) => {
   try {
-    console.log('📊 Obteniendo actividad reciente del dashboard');
-
+    console.log('📋 Recent activity requested by usuario:', req.usuario?.id);
+    
     const limit = parseInt(req.query.limit) || 10;
 
-    // ✅ OBTENER MOVIMIENTOS RECIENTES
+    //  CORRECCIÓN: usar 'user_id' en lugar de 'usuarioId'
     const recentMovements = await Movement.find({ activo: true })
-      .populate('user_id', 'nombre_completo correo_electronico region')
+      .populate('user_id', 'nombre_completo rol region')
       .sort({ fecha: -1 })
       .limit(limit)
       .lean();
 
-    console.log(`✅ ${recentMovements.length} movimientos recientes encontrados`);
+    //  Mapear a formato esperado por frontend
+    const activities = recentMovements.map((movement) => {
+      let type = 'movement_completed';
+      let description = '';
 
-    // ✅ FORMATEAR DATOS
-    const activities = recentMovements.map(mov => ({
-      _id: mov._id,
-      tipo: 'movimiento',
-      usuario: {
-        _id: mov.user_id?._id,
-        nombre_completo: mov.user_id?.nombre_completo || 'Usuario desconocido',
-        correo_electronico: mov.user_id?.correo_electronico || 'N/A',
-        region: mov.user_id?.region || mov.region
-      },
-      fecha: mov.fecha,
-      distancia: mov.distancia_recorrida,
-      velocidad_maxima: mov.velocidad_maxima,
-      region: mov.region,
-      estado: mov.estado
-    }));
+      // Determinar tipo de actividad
+      if (movement.estado === 'completado') {
+        type = 'movement_completed';
+        description = `Completó ${movement.tipo_movimiento || 'recorrido'}`;
+      } else if (movement.estado === 'iniciado' || movement.estado === 'en_progreso') {
+        type = 'movement_started';
+        description = `Inició ${movement.tipo_movimiento || 'recorrido'}`;
+      } else if (movement.incidentes && movement.incidentes.length > 0) {
+        type = 'incident_reported';
+        description = `Reportó ${movement.incidentes.length} incidente(s)`;
+      }
+
+      return {
+        id: movement._id,
+        userId: movement.user_id?._id || 'unknown',
+        userName: movement.user_id?.nombre_completo || 'Usuario Desconocido',
+        userRole: movement.user_id?.rol || 'N/A',
+        type,
+        description,
+        region: movement.region || 'N/A',
+        distance: movement.distancia_recorrida || 0,
+        timestamp: movement.fecha || movement.created_at
+      };
+    });
 
     res.json({
       success: true,
@@ -161,11 +171,10 @@ router.get('/recent-activity', authMiddleware, adminMiddleware, async (req, res)
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo actividad reciente:', error);
+    console.error(' Error getting recent activity:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al obtener actividad reciente',
-      error: error.message
+      message: 'Error interno del servidor'
     });
   }
 });
