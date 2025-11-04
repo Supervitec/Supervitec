@@ -7,6 +7,7 @@ const XLSX = require('xlsx');
 
 const JWT_SECRET = process.env.JWT_SECRET || '5up3r_v1t3c';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || '5up3r_v1t3c';
+const mongoose = require('mongoose');
 
 // ===== LOGIN Y AUTENTICACIÓN =====
 
@@ -93,7 +94,17 @@ exports.getUserStats = async (req, res) => {
     const { id } = req.params;
     console.log('📊 Obteniendo estadísticas del usuario:', id);
 
-    const user = await User.findById(id);
+    // ✅ CONVERTIR A OBJECTID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(id);
+
+    const user = await User.findById(userObjectId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -101,34 +112,36 @@ exports.getUserStats = async (req, res) => {
       });
     }
 
-    const movements = await Movement.find({ 
-      user_id: id,
-      activo: true 
+    // ✅ BUSCAR CON OBJECTID
+    const movements = await Movement.find({
+      user_id: userObjectId, // ✅ Ahora es ObjectId
+      activo: true
     });
+
+    console.log(`✅ ${movements.length} movimientos encontrados para el usuario`);
 
     const totalMovements = movements.length;
     const totalDistance = movements.reduce((sum, mov) => sum + (mov.distancia_recorrida || 0), 0);
     const averageDistance = totalMovements > 0 ? totalDistance / totalMovements : 0;
-    const maxSpeed = movements.length > 0 
-      ? Math.max(...movements.map(mov => mov.velocidad_maxima || 0)) 
+    const maxSpeed = movements.length > 0
+      ? Math.max(...movements.map(mov => mov.velocidad_maxima || 0))
       : 0;
     const totalTime = movements.reduce((sum, mov) => sum + (mov.tiempo_total || 0), 0);
-    
     const lastActivity = movements.length > 0
       ? movements.sort((a, b) => b.fecha - a.fecha)[0].fecha
       : null;
 
     const allUsers = await Movement.aggregate([
       { $match: { activo: true } },
-      { 
-        $group: { 
-          _id: '$user_id', 
-          totalDistance: { $sum: '$distancia_recorrida' } 
-        } 
+      {
+        $group: {
+          _id: '$user_id',
+          totalDistance: { $sum: '$distancia_recorrida' }
+        }
       },
       { $sort: { totalDistance: -1 } }
     ]);
-    
+
     const rankingPosition = allUsers.findIndex(u => u._id.toString() === id) + 1;
 
     const stats = {
@@ -141,7 +154,7 @@ exports.getUserStats = async (req, res) => {
       rankingPosition: rankingPosition || 0
     };
 
-    console.log(' Estadísticas calculadas:', stats);
+    console.log('✅ Estadísticas calculadas:', stats);
 
     res.json({
       success: true,
@@ -149,7 +162,7 @@ exports.getUserStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error obteniendo estadísticas:', error);
+    console.error('❌ Error obteniendo estadísticas:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -163,7 +176,17 @@ exports.getUserMovements = async (req, res) => {
     const { id } = req.params;
     console.log('📍 Obteniendo movimientos del usuario:', id);
 
-    const user = await User.findById(id);
+    // ✅ CONVERTIR A OBJECTID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(id);
+
+    const user = await User.findById(userObjectId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -171,14 +194,16 @@ exports.getUserMovements = async (req, res) => {
       });
     }
 
-    const query = { 
-      user_id: id,
-      activo: true 
+    // ✅ CONSTRUIR QUERY CON OBJECTID
+    const query = {
+      user_id: userObjectId, // ✅ Ahora es ObjectId
+      activo: true
     };
 
     if (req.query.estado) query.estado = req.query.estado;
     if (req.query.region) query.region = req.query.region;
     if (req.query.tipo_movimiento) query.tipo_movimiento = req.query.tipo_movimiento;
+
     if (req.query.fecha_inicio && req.query.fecha_fin) {
       query.fecha = {
         $gte: new Date(req.query.fecha_inicio),
@@ -190,7 +215,7 @@ exports.getUserMovements = async (req, res) => {
       .sort({ fecha: -1 })
       .limit(parseInt(req.query.limit) || 100);
 
-    console.log(` ${movements.length} movimientos encontrados`);
+    console.log(`✅ ${movements.length} movimientos encontrados`);
 
     res.json({
       success: true,
@@ -199,7 +224,7 @@ exports.getUserMovements = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error obteniendo movimientos:', error);
+    console.error('❌ Error obteniendo movimientos:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -263,23 +288,36 @@ exports.deleteMovement = async (req, res) => {
 exports.exportMovements = async (req, res) => {
   try {
     const { month, year, region } = req.params;
-
     console.log(`📤 Exportando movimientos: ${month}/${year}${region ? ` - ${region}` : ''}`);
+
+    // ✅ CONSTRUIR FECHAS CORRECTAMENTE
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
 
     const match = {
       fecha: {
-        $gte: new Date(parseInt(year), parseInt(month) - 1, 1),
-        $lt: new Date(parseInt(year), parseInt(month), 1),
+        $gte: new Date(yearNum, monthNum - 1, 1),
+        $lt: new Date(yearNum, monthNum, 1),
       },
-      activo: true 
+      activo: true
     };
-    if (region) match.region = region;
+
+    if (region && region !== 'todas') { // ✅ Permitir "todas" como filtro
+      match.region = region;
+    }
 
     const data = await Movement.find(match)
       .populate('user_id', 'nombre_completo correo_electronico region transporte rol')
       .lean();
 
     console.log(`📊 ${data.length} movimientos encontrados`);
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontraron movimientos para el período seleccionado'
+      });
+    }
 
     // ✅ LOG PARA VERIFICAR tiempo_total
     if (data.length > 0) {
@@ -290,13 +328,13 @@ exports.exportMovements = async (req, res) => {
       Usuario: mov.user_id?.nombre_completo || 'N/A',
       Correo: mov.user_id?.correo_electronico || 'N/A',
       Región: mov.region || 'N/A',
-      Transporte: mov.user_id?.transporte || 'N/A',
+      Transporte: mov.user_id?.transporte || mov.transporte_utilizado || 'N/A',
       Rol: mov.user_id?.rol || 'N/A',
       Fecha: mov.fecha ? mov.fecha.toISOString().substring(0, 10) : 'N/A',
-      'Distancia (km)': ((mov.distancia_recorrida || 0) / 1000).toFixed(2), // ✅ Convertir a km
+      'Distancia (km)': ((mov.distancia_recorrida || 0) / 1000).toFixed(2),
       'Velocidad Promedio (km/h)': (mov.velocidad_promedio || 0).toFixed(1),
       'Velocidad Máxima (km/h)': (mov.velocidad_maxima || 0).toFixed(1),
-      'Tiempo (minutos)': mov.tiempo_total || 0 // ✅ Ya está en minutos
+      'Tiempo (minutos)': mov.tiempo_total || 0
     }));
 
     console.log('✅ Primer registro formateado:', records[0]);
@@ -311,11 +349,15 @@ exports.exportMovements = async (req, res) => {
     res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     
     console.log('✅ Archivo Excel enviado');
-    
     res.send(buf);
+
   } catch (err) {
     console.error('❌ Error exportando movimientos:', err);
-    res.status(500).json({ mensaje: 'Error al exportar', error: err.message });
+    res.status(500).json({ 
+      success: false,
+      mensaje: 'Error al exportar', 
+      error: err.message 
+    });
   }
 };
 
