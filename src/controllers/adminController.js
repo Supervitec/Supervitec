@@ -824,29 +824,24 @@ exports.sendMessage = async (req, res) => {
 };
   exports.getAdminsList = async (req, res) => {
   try {
-    console.log('📋 Obteniendo lista de administradores');
+    console.log('👥 Obteniendo lista de administradores...');
     
-    const admins = await Admin.find()
-      .select('correo_electronico nombre_completo regions -contrasena')
-      .lean();
-
+    const Admin = require('../models/admin');
+    
+    const admins = await Admin.find({})
+      .select('nombre apellidos correo_electronico _id'); // Especifica SOLO los campos que quieres
+    
     console.log(`✅ ${admins.length} administradores encontrados`);
-
+    
     res.json({
       success: true,
-      admins: admins.map(admin => ({
-        _id: admin._id,
-        nombre: admin.nombre_completo || admin.correo_electronico,
-        correo: admin.correo_electronico,
-        regions: admin.regions || []
-      }))
+      data: admins
     });
-
   } catch (error) {
-    console.error('❌ Error obteniendo administradores:', error);
+    console.error('❌ Error obteniendo lista de admins:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo administradores',
+      message: 'Error al obtener lista de administradores',
       error: error.message
     });
   }

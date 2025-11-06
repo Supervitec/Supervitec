@@ -12,7 +12,7 @@ router.post('/login', adminController.adminLogin);
 
 
 // =====================================================
-// ⚠️ SIN AUTH - para que usuarios puedan listar admins
+
 router.get('/admins/list', adminController.getAdminsList);
 
 // =====================================================
