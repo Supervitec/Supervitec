@@ -411,41 +411,40 @@ exports.deleteMessage = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    console.log('🗑️ DELETE /messages/:id - Mensaje:', id);
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'ID de mensaje inválido'
-      });
-    }
-
+    
+    console.log('🗑️ DELETE /messages/:id - Usuario:', userId, 'Mensaje:', id);
+    
     const message = await Message.findById(id);
-
+    
     if (!message) {
       return res.status(404).json({
         success: false,
         message: 'Mensaje no encontrado'
       });
     }
-
-    // El usuario solo puede eliminar sus propios mensajes recibidos
-    if (message.to_user_id.toString() !== userId) {
+    
+    // ✅ Permitir eliminar si eres el destinatario o el remitente
+    const isRecipient = message.to_user_id.toString() === userId;
+    const isSender = message.from_user_id.toString() === userId;
+    
+    if (!isRecipient && !isSender) {
       return res.status(403).json({
         success: false,
         message: 'No tienes permiso para eliminar este mensaje'
       });
     }
-
+    
     // Soft delete
     message.eliminado = true;
     await message.save();
-
-    return res.status(200).json({
+    
+    console.log('✅ Mensaje eliminado (soft delete):', id);
+    
+    return res.json({
       success: true,
       message: 'Mensaje eliminado correctamente'
     });
+    
   } catch (error) {
     console.error('❌ Error en deleteMessage:', error);
     return res.status(500).json({
