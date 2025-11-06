@@ -4,7 +4,43 @@ const auth = require('../middlewares/auth');
 const adminAuth = require('../middlewares/adminAuth');
 const messageController = require('../controllers/messageController');
 
-// ===== RUTAS PARA USUARIOS Y ADMINS =====
+// ===== RUTAS PÚBLICAS / SIN AUTH ESTRICTA =====
+
+// ✅ OBTENER LISTA DE ADMINISTRADORES (para que usuarios puedan enviar mensajes)
+router.get('/admins', async (req, res) => {
+  try {
+    const Admin = require('../models/admin');
+    
+    console.log('📋 Usuario solicitando lista de administradores');
+    
+    const admins = await Admin.find()
+      .select('correo_electronico nombre_completo -contrasena')
+      .lean();
+
+    const adminsList = admins.map(admin => ({
+      _id: admin._id,
+      nombre: admin.nombre_completo || admin.correo_electronico,
+      correo: admin.correo_electronico
+    }));
+
+    console.log(`✅ ${adminsList.length} admins encontrados`);
+
+    res.json({
+      success: true,
+      admins: adminsList
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo admins:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo administradores',
+      error: error.message
+    });
+  }
+});
+
+// ===== RUTAS PARA USUARIOS Y ADMINS (requieren auth) =====
 
 // GET /api/v1/messages - Obtener mis mensajes (para usuarios y admins)
 router.get('/', auth, messageController.getMyMessages);

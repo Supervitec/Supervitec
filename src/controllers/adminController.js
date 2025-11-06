@@ -114,7 +114,7 @@ exports.getUserStats = async (req, res) => {
 
     // ✅ BUSCAR CON OBJECTID
     const movements = await Movement.find({
-      user_id: userObjectId, // ✅ Ahora es ObjectId
+      user_id: userObjectId, 
       activo: true
     });
 
@@ -819,6 +819,35 @@ exports.sendMessage = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error enviando mensaje'
+    });
+  }
+};
+  exports.getAdminsList = async (req, res) => {
+  try {
+    console.log('📋 Obteniendo lista de administradores');
+    
+    const admins = await Admin.find()
+      .select('correo_electronico nombre_completo regions -contrasena')
+      .lean();
+
+    console.log(`✅ ${admins.length} administradores encontrados`);
+
+    res.json({
+      success: true,
+      admins: admins.map(admin => ({
+        _id: admin._id,
+        nombre: admin.nombre_completo || admin.correo_electronico,
+        correo: admin.correo_electronico,
+        regions: admin.regions || []
+      }))
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo administradores:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo administradores',
+      error: error.message
     });
   }
 };

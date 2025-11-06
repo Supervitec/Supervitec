@@ -5,11 +5,37 @@ const adminAuth = require('../middlewares/adminAuth');
 const { body } = require('express-validator');
 const validarCampos = require('../middlewares/validarCampos');
 
-// ===== LOGIN (NO requiere auth) =====
+// ====================================
+// ===== LOGIN  =====
+// ====================================
 router.post('/login', adminController.adminLogin);
 
-// ===== GESTIÓN DE USUARIOS (requieren auth) =====
+
+// =====================================================
+// ⚠️ SIN AUTH - para que usuarios puedan listar admins
+router.get('/admins/list', adminController.getAdminsList);
+
+// =====================================================
+// ===== CONFIGURACIÓN DEL ADMINISTRADOR =====
+// =====================================================
+router.get('/config', adminAuth, adminController.getAdminConfig);
+router.put('/config', adminAuth, adminController.updateAdminConfig);
+
+// =====================================================
+// ===== GESTIÓN AVANZADA DE USUARIOS (BEFORE/:id) =====
+// =====================================================
+// ⚠️ IMPORTANTE: Las rutas con /management ANTES de /:id
+router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
+router.put('/users/edit/:userId', adminAuth, adminController.editUser);
+router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
+router.post('/users/create', adminAuth, adminController.createUser);
+
+// =====================================================
+// ===== GESTIÓN ESTÁNDAR DE USUARIOS =====
+// =====================================================
 router.get('/users', adminAuth, adminController.getUsers);
+router.get('/users/:id/stats', adminAuth, adminController.getUserStats);
+router.get('/users/:id/movements', adminAuth, adminController.getUserMovements);
 
 router.put(
   '/users/:id',
@@ -23,10 +49,10 @@ router.put(
 );
 
 router.delete('/users/:id', adminAuth, adminController.deleteUser);
-router.get('/users/:id/stats', adminAuth, adminController.getUserStats);
-router.get('/users/:id/movements', adminAuth, adminController.getUserMovements);
 
-// ===== GESTIÓN DE MOVIMIENTOS (requieren auth) =====
+// =====================================================
+// ===== GESTIÓN DE MOVIMIENTOS =====
+// =====================================================
 router.get('/movements', adminAuth, adminController.getMovements);
 
 router.put(
@@ -46,25 +72,21 @@ router.put(
 
 router.delete('/movements/:id', adminAuth, adminController.deleteMovement);
 
-// ===== EXPORTACIÓN (requiere auth) =====
+// =====================================================
+// ===== EXPORTACIÓN =====
+// =====================================================
 router.get('/export/:month/:year', adminAuth, adminController.exportMovements);
 router.get('/export/:month/:year/:region', adminAuth, adminController.exportMovements);
 
-// ===== CONFIGURACIÓN DEL ADMINISTRADOR =====
-router.get('/config', adminAuth, adminController.getAdminConfig);
-router.put('/config', adminAuth, adminController.updateAdminConfig);
-
-
-
-// ===== GESTIÓN AVANZADA DE USUARIOS =====
-router.get('/users/management', adminAuth, adminController.getAllUsersForManagement);
-router.put('/users/edit/:userId', adminAuth, adminController.editUser);
-router.delete('/users/delete/:userId', adminAuth, adminController.deleteUserPermanently);
-router.post('/users/create', adminAuth, adminController.createUser);
+// =====================================================
+// ===== ADMIN - OTROS (SEND MESSAGE, PASSWORD, ETC) =====
+// =====================================================
 router.post('/change-user-password', adminAuth, adminController.changeUserPassword);
 router.post('/send-message', adminAuth, adminController.sendMessage);
 
+// =====================================================
 // ===== SISTEMA =====
+// =====================================================
 router.post('/export-all-data', adminAuth, adminController.exportAllData);
 router.post('/reset-system', adminAuth, adminController.resetSystem);
 
