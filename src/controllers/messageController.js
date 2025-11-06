@@ -161,8 +161,8 @@ exports.getMessageById = async (req, res) => {
     }
     
     const message = await Message.findById(id)
-      .populate('from_user_id')
-      .populate('to_user_id')
+      .populate('from_user_id', 'nombre_completo correo_electronico rol')
+      .populate('to_user_id', 'nombre_completo correo_electronico rol')
       .lean();
     
     if (!message) {
