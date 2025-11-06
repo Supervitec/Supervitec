@@ -829,7 +829,7 @@ exports.sendMessage = async (req, res) => {
     const Admin = require('../models/admin');
     
     const admins = await Admin.find({})
-      .select('nombre apellidos correo_electronico _id'); // Especifica SOLO los campos que quieres
+      .select('nombre apellidos correo_electronico _id'); 
     
     console.log(`✅ ${admins.length} administradores encontrados`);
     

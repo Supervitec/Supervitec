@@ -4,15 +4,29 @@ const messageSchema = new mongoose.Schema({
   // De quién viene el mensaje
   from_user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    required: true,
+    refPath: 'from_user_type' // ✅ Referencia dinámica
+  },
+  
+  // Tipo de remitente: User o Admin
+  from_user_type: {
+    type: String,
+    required: true,
+    enum: ['User', 'Admin']
   },
   
   // Para quién va el mensaje
   to_user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    required: true,
+    refPath: 'to_user_type' // ✅ Referencia dinámica
+  },
+  
+  // Tipo de destinatario: User o Admin
+  to_user_type: {
+    type: String,
+    required: true,
+    enum: ['User', 'Admin']
   },
   
   // Contenido del mensaje
@@ -59,11 +73,12 @@ const messageSchema = new mongoose.Schema({
     type: String,
     default: 'Sin asunto'
   }
+  
 }, { timestamps: true });
 
 // Índices para optimizar queries
-messageSchema.index({ from_user_id: 1, fecha_creacion: -1 });
-messageSchema.index({ to_user_id: 1, fecha_creacion: -1 });
-messageSchema.index({ leido: 1, to_user_id: 1 });
+messageSchema.index({ from_user_id: 1, from_user_type: 1, fecha_creacion: -1 });
+messageSchema.index({ to_user_id: 1, to_user_type: 1, fecha_creacion: -1 });
+messageSchema.index({ leido: 1, to_user_id: 1, to_user_type: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);

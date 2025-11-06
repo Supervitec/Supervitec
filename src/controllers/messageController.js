@@ -125,11 +125,11 @@ exports.getMessage = async (req, res) => {
 // POST /api/messages - Enviar mensaje
 exports.sendMessage = async (req, res) => {
   try {
-    const { to_user_id, contenido, asunto, tipo } = req.body;
+    const { to_user_id, to_user_type, contenido, asunto, tipo } = req.body;
     const from_user_id = req.user.id;
-
-    console.log('📤 POST /messages - De:', from_user_id, 'Para:', to_user_id);
-
+    
+    console.log('📤 POST /messages - De:', from_user_id, 'Para:', to_user_id, 'Tipo:', to_user_type);
+    
     // Validaciones
     if (!to_user_id || !contenido) {
       return res.status(400).json({
@@ -137,54 +137,61 @@ exports.sendMessage = async (req, res) => {
         message: 'Faltan campos requeridos: to_user_id y contenido'
       });
     }
-
+    
     if (!mongoose.Types.ObjectId.isValid(to_user_id)) {
       return res.status(400).json({
         success: false,
         message: 'ID de usuario destino inválido'
       });
     }
-
-    // Verificar que el usuario destino existe
-    const destinatario = await User.findById(to_user_id);
+    
+    // ✅ Determinar el tipo de remitente (User o Admin)
+    const Admin = require('../models/admin');
+    const isAdminSender = await Admin.findById(from_user_id);
+    const from_user_type = isAdminSender ? 'Admin' : 'User';
+    
+    // ✅ Verificar que el destinatario existe (puede ser User o Admin)
+    let destinatario;
+    let destinatario_type = to_user_type || 'Admin'; // Por defecto Admin si no se especifica
+    
+    if (destinatario_type === 'Admin') {
+      destinatario = await Admin.findById(to_user_id);
+    } else {
+      destinatario = await User.findById(to_user_id);
+    }
+    
     if (!destinatario) {
       return res.status(404).json({
         success: false,
         message: 'Usuario destino no encontrado'
       });
     }
-
-    // Si el usuario NO es admin, solo puede enviar al admin
-    const usuarioActual = await User.findById(from_user_id);
-    if (usuarioActual.rol !== 'admin' && destinatario.rol !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Los usuarios solo pueden enviar mensajes al admin'
-      });
-    }
-
+    
     // Crear el mensaje
     const nuevoMensaje = new Message({
       from_user_id,
+      from_user_type,
       to_user_id,
+      to_user_type: destinatario_type,
       contenido,
       asunto: asunto || 'Sin asunto',
       tipo: tipo || 'general'
     });
-
+    
     await nuevoMensaje.save();
-
-    // Poblar referencias
-    await nuevoMensaje.populate('from_user_id', 'nombre_completo correo_electronico rol');
-    await nuevoMensaje.populate('to_user_id', 'nombre_completo correo_electronico rol');
-
+    
+    // Poblar referencias dinámicamente
+    await nuevoMensaje.populate('from_user_id');
+    await nuevoMensaje.populate('to_user_id');
+    
     console.log('✅ Mensaje enviado:', nuevoMensaje._id);
-
+    
     return res.status(201).json({
       success: true,
       message: 'Mensaje enviado correctamente',
       data: nuevoMensaje
     });
+    
   } catch (error) {
     console.error('❌ Error en sendMessage:', error);
     return res.status(500).json({
@@ -194,6 +201,7 @@ exports.sendMessage = async (req, res) => {
     });
   }
 };
+
 
 // ===== MARCAR COMO LEÍDO =====
 
