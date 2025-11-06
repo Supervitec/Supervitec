@@ -4,45 +4,69 @@ const mongoose = require('mongoose');
 
 // ===== OBTENER MENSAJES =====
 
-// GET /api/messages - Obtener todos mis mensajes (recibidos)
 exports.getMyMessages = async (req, res) => {
   try {
     const userId = req.user.id;
     const { leido, limit = 20, skip = 0 } = req.query;
-
+    
     console.log('📨 GET /messages - Usuario:', userId);
-
+    
+    // ✅ Determinar el tipo de usuario
+    const Admin = require('../models/admin');
+    let userAdmin = await Admin.findById(userId);
+    let userUser = await User.findById(userId);
+    
+    let user_type;
+    if (userAdmin) {
+      user_type = 'Admin';
+    } else if (userUser && userUser.rol === 'admin') {
+      user_type = 'Admin';
+    } else if (userUser) {
+      user_type = 'User';
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    console.log('📨 Tipo de usuario:', user_type);
+    
     // Filtros
     let filter = {
       to_user_id: userId,
+      to_user_type: user_type, // ✅ Filtrar por tipo también
       eliminado: false
     };
-
+    
     if (leido === 'true') {
       filter.leido = true;
     } else if (leido === 'false') {
       filter.leido = false;
     }
-
+    
     // Obtener mensajes con paginación
     const messages = await Message.find(filter)
-      .populate('from_user_id', 'nombre_completo correo_electronico rol')
+      .populate('from_user_id')
       .sort({ fecha_creacion: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(skip))
       .lean();
-
+    
     // Contar total
     const total = await Message.countDocuments(filter);
-
+    
     // Contar no leídos
     const noLeidos = await Message.countDocuments({
       to_user_id: userId,
+      to_user_type: user_type,
       leido: false,
       eliminado: false
     });
-
-    return res.status(200).json({
+    
+    console.log(`✅ ${messages.length} mensajes encontrados (${noLeidos} no leídos)`);
+    
+    return res.json({
       success: true,
       message: 'Mensajes obtenidos correctamente',
       data: messages,
@@ -50,10 +74,11 @@ exports.getMyMessages = async (req, res) => {
         total,
         limit: parseInt(limit),
         skip: parseInt(skip),
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / parseInt(limit))
       },
       noLeidos
     });
+    
   } catch (error) {
     console.error('❌ Error en getMyMessages:', error);
     return res.status(500).json({
@@ -145,27 +170,61 @@ exports.sendMessage = async (req, res) => {
       });
     }
     
-    // ✅ Determinar el tipo de remitente (User o Admin)
+    // ✅ Determinar el tipo de remitente (buscar en ambas colecciones)
     const Admin = require('../models/admin');
-    const isAdminSender = await Admin.findById(from_user_id);
-    const from_user_type = isAdminSender ? 'Admin' : 'User';
     
-    // ✅ Verificar que el destinatario existe (puede ser User o Admin)
-    let destinatario;
-    let destinatario_type = to_user_type || 'Admin'; // Por defecto Admin si no se especifica
+    let remitenteAdmin = await Admin.findById(from_user_id);
+    let remitenteUser = await User.findById(from_user_id);
     
-    if (destinatario_type === 'Admin') {
-      destinatario = await Admin.findById(to_user_id);
+    let from_user_type;
+    let remitente;
+    
+    if (remitenteAdmin) {
+      from_user_type = 'Admin';
+      remitente = remitenteAdmin;
+    } else if (remitenteUser && remitenteUser.rol === 'admin') {
+      // ✅ Si es un User con rol admin, tratarlo como Admin
+      from_user_type = 'Admin';
+      remitente = remitenteUser;
+    } else if (remitenteUser) {
+      from_user_type = 'User';
+      remitente = remitenteUser;
     } else {
-      destinatario = await User.findById(to_user_id);
+      return res.status(404).json({
+        success: false,
+        message: 'Remitente no encontrado'
+      });
     }
     
-    if (!destinatario) {
+    console.log('📤 Remitente:', from_user_type, remitente.correo_electronico || remitente.nombre_completo);
+    
+    // ✅ Buscar destinatario (buscar en ambas colecciones)
+    let destinatario;
+    let destinatario_type;
+    
+    // Primero buscar en Admin
+    let destinatarioAdmin = await Admin.findById(to_user_id);
+    let destinatarioUser = await User.findById(to_user_id);
+    
+    if (destinatarioAdmin) {
+      destinatario = destinatarioAdmin;
+      destinatario_type = 'Admin';
+    } else if (destinatarioUser && destinatarioUser.rol === 'admin') {
+      // ✅ Si es un User con rol admin, tratarlo como Admin
+      destinatario = destinatarioUser;
+      destinatario_type = 'Admin';
+    } else if (destinatarioUser) {
+      destinatario = destinatarioUser;
+      destinatario_type = 'User';
+    } else {
+      console.error('❌ Destinatario no encontrado en ninguna colección:', to_user_id);
       return res.status(404).json({
         success: false,
         message: 'Usuario destino no encontrado'
       });
     }
+    
+    console.log('📤 Destinatario:', destinatario_type, destinatario.correo_electronico || destinatario.nombre_completo);
     
     // Crear el mensaje
     const nuevoMensaje = new Message({
