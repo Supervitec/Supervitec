@@ -48,6 +48,10 @@ router.get('/', auth, messageController.getMyMessages);
 // GET /api/v1/messages/:id - Ver un mensaje específico
 router.get('/:id', auth, messageController.getMessage);
 
+// GET /api/messages/:id - Obtener un mensaje específico
+router.get('/:id', auth, messageController.getMessageById);
+
+
 // POST /api/v1/messages - Enviar nuevo mensaje
 router.post('/', auth, messageController.sendMessage);
 

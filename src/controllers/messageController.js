@@ -145,6 +145,63 @@ exports.getMessage = async (req, res) => {
   }
 };
 
+// GET /api/messages/:id - Obtener mensaje por ID
+exports.getMessageById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    console.log('📨 GET /messages/:id - Usuario:', userId, 'Mensaje:', id);
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de mensaje inválido'
+      });
+    }
+    
+    const message = await Message.findById(id)
+      .populate('from_user_id')
+      .populate('to_user_id')
+      .lean();
+    
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mensaje no encontrado'
+      });
+    }
+    
+    // Verificar que el usuario sea el remitente o el destinatario
+    const isOwner = 
+      message.from_user_id._id.toString() === userId ||
+      message.to_user_id._id?.toString() === userId ||
+      message.to_user_id.toString() === userId;
+    
+    if (!isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permiso para ver este mensaje'
+      });
+    }
+    
+    console.log('✅ Mensaje encontrado:', message._id);
+    
+    return res.json({
+      success: true,
+      data: message
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en getMessageById:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener el mensaje',
+      error: error.message
+    });
+  }
+};
+
 // ===== CREAR MENSAJES =====
 
 // POST /api/messages - Enviar mensaje
