@@ -693,6 +693,50 @@ exports.changeUserPassword = async (req, res) => {
   }
 };
 
+// ✅ NUEVO: Obtener actividad reciente
+exports.getRecentActivity = async (req, res) => {
+  try {
+    console.log('📊 Obteniendo actividad reciente');
+
+    const Movement = require('../models/Movement');
+    const User = require('../models/User');
+
+    // Obtener los últimos 10 movimientos
+    const recentMovements = await Movement.find()
+      .sort({ fecha_inicio: -1 })
+      .limit(10)
+      .populate('usuario_id', 'nombre_completo')
+      .lean();
+
+    // Formatear actividad
+    const activities = recentMovements.map(movement => ({
+      id: movement._id,
+      userId: movement.usuario_id?._id,
+      userName: movement.usuario_id?.nombre_completo || 'Usuario desconocido',
+      type: movement.estado === 'completado' ? 'movement_completed' : 'movement_started',
+      description: movement.estado === 'completado' 
+        ? `Completó recorrido de ${(movement.distancia_total / 1000).toFixed(1)} km`
+        : 'Inició un recorrido',
+      timestamp: movement.fecha_inicio,
+      action: movement.estado
+    }));
+
+    res.json({
+      success: true,
+      data: activities
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo actividad reciente:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo actividad reciente',
+      error: error.message
+    });
+  }
+};
+
+
 // ===== SISTEMA =====
 
 exports.exportAllData = async (req, res) => {

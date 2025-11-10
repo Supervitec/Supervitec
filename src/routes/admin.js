@@ -20,6 +20,7 @@ router.get('/admins/list', adminController.getAdminsList);
 // =====================================================
 router.get('/config', adminAuth, adminController.getAdminConfig);
 router.put('/config', adminAuth, adminController.updateAdminConfig);
+router.get('/activity/recent', adminAuth, adminController.getRecentActivity);
 
 // =====================================================
 // ===== GESTIÓN AVANZADA DE USUARIOS (BEFORE/:id) =====
