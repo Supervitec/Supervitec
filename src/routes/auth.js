@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-//  ENDPOINTS USANDO CONTROLADORES (mantener como están)
+//  ENDPOINTS USANDO CONTROLADORES 
 router.post('/register', register);
 router.post('/login', login);
 
@@ -46,8 +46,6 @@ router.post(
 );
 
 router.put('/change-password-logged', auth, changePasswordLogged);
-
-//  NUEVO SISTEMA DE RESET PASSWORD (SIN TOKEN DE AUTENTICACIÓN)
 
 // POST /api/v1/auth/request-password-reset - Solicitar reset de contraseña
 router.post('/request-password-reset', async (req, res) => {
@@ -78,7 +76,7 @@ router.post('/request-password-reset', async (req, res) => {
     // Generar token seguro de 32 bytes
     const resetToken = crypto.randomBytes(32).toString('hex');
     
-    // Configurar token y expiración (1 hora)
+    // Configurar token y expiración
     user.tokenRecuperacion = resetToken;
     user.expiraTokenRecuperacion = new Date(Date.now() + 3600000); // 1 hora
     
